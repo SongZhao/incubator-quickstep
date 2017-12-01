@@ -57,6 +57,7 @@ BitWeavingIndexSubBlock::BitWeavingIndexSubBlock(const TupleStorageSubBlock &tup
       dictionary_size_bytes_(0),
       dictionary_(nullptr),
       internal_dictionary_(nullptr) {
+  std::cout << "Get Here! " << std::endl;
   DCHECK_EQ(description_.indexed_attribute_ids_size(), 1);
   key_id_ = description_.indexed_attribute_ids(0);
   key_type_ = &(relation_.getAttributeById(key_id_)->getType());
@@ -174,8 +175,9 @@ bool BitWeavingIndexSubBlock::buildInternalDictionary(CompressionDictionaryBuild
   bool may_be_truncated = (key_type_->getTypeID() == kInt) || (key_type_->getTypeID() == kLong);
   bool first_non_null_value = true;
 
-  const std::int64_t maximum_supported_code = (1LL << maximum_code_length_) - 1;
-  // TODO const std::int64_t maximum_supported_code = (1LL << 63) - 1;
+  //const std::int64_t maximum_supported_code = (1LL << maximum_code_length_) - 1;
+  const std::int64_t maximum_supported_code = (1LL << 32) - 1;
+  std::cout << "Test then: " <<  maximum_code_length_ << std::endl;
 
   std::unique_ptr<ValueAccessor> accessor(tuple_store_.createValueAccessor());
   InvokeOnAnyValueAccessor(
