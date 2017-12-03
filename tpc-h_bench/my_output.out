@@ -1,0 +1,177 @@
+Loading settings from quickstep.cfg
+QS=/mnt/ssd/quickstep/build/quickstep_cli_shell
+
+QS_ARGS_BASE="-printing_enabled=false"
+
+QS_ARGS_NUMA_LOAD="-num_workers=32"
+
+QS_ARGS_NUMA_RUN="-num_workers=32"
+
+CREATE_SQL="create_bw.sql"
+
+LOAD_DATA=false
+
+TPCH_DATA_PATH=/slowdisk/qs_tpch_10
+
+QS_STORAGE=/mnt/ssd/quickstep/build/qsstor
+
+QUERIES="ALL"
+========== start to do queries
+/mnt/ssd/quickstep/build/quickstep_cli_shell -printing_enabled=false -num_workers=32 -storage_path=/mnt/ssd/quickstep/build/qsstor
+Query 01.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 363.929 ms
+Time: 86.314 ms
+Time: 80.245 ms
+Time: 78.721 ms
+Time: 78.199 ms
+Query 02.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Get Here! 
+Time: 135.984 ms
+Time: 100.666 ms
+Time: 96.077 ms
+Time: 93.810 ms
+Time: 98.199 ms
+Query 03.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 208.190 ms
+Time: 60.648 ms
+Time: 61.015 ms
+Time: 64.596 ms
+Time: 64.923 ms
+Query 04.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 168.978 ms
+Time: 33.463 ms
+Time: 45.023 ms
+Time: 44.923 ms
+Time: 54.985 ms
+Query 05.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Get Here! 
+Time: 213.274 ms
+Time: 48.387 ms
+Time: 49.766 ms
+Time: 44.554 ms
+Time: 46.970 ms
+Query 06.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 125.290 ms
+Time: 16.513 ms
+Time: 15.938 ms
+Time: 15.945 ms
+Time: 16.607 ms
+Query 07.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 192.785 ms
+Time: 66.096 ms
+Time: 61.042 ms
+Time: 61.549 ms
+Time: 63.665 ms
+Query 08.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Get Here! 
+Time: 178.879 ms
+Time: 29.664 ms
+Time: 36.696 ms
+Time: 34.167 ms
+Time: 34.673 ms
+Query 09.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 326.625 ms
+Time: 78.263 ms
+Time: 73.596 ms
+Time: 75.121 ms
+Time: 77.984 ms
+Query 10.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 258.124 ms
+Time: 126.241 ms
+Time: 132.321 ms
+Time: 139.217 ms
+Time: 142.361 ms
+Query 11.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 145.909 ms
+Time: 96.971 ms
+Time: 77.933 ms
+Time: 161.537 ms
+Time: 126.904 ms
+Query 12.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 182.170 ms
+Time: 56.188 ms
+Time: 59.501 ms
+Time: 58.037 ms
+Time: 54.648 ms
+Query 13.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 84.870 ms
+Time: 66.841 ms
+Time: 69.523 ms
+Time: 71.618 ms
+Time: 69.760 ms
+Query 14.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 153.315 ms
+Time: 41.788 ms
+Time: 38.813 ms
+Time: 42.343 ms
+Time: 39.562 ms
+Query 15.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 160.793 ms
+Time: 25.640 ms
+Time: 24.547 ms
+Time: 23.951 ms
+Time: 24.021 ms
+Query 16.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 153.830 ms
+Time: 199.957 ms
+Time: 137.673 ms
+Time: 143.754 ms
+Time: 168.699 ms
+Query 17.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 417.184 ms
+Time: 358.575 ms
+Time: 330.381 ms
+Time: 368.169 ms
+Time: 367.575 ms
+Query 18.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 196.293 ms
+Time: 80.631 ms
+Time: 77.722 ms
+Time: 82.083 ms
+Time: 76.900 ms
+Query 19.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 130.988 ms
+Time: 31.857 ms
+Time: 30.656 ms
+Time: 31.549 ms
+Time: 30.497 ms
+Query 20.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 218.782 ms
+Time: 157.988 ms
+Time: 159.623 ms
+Time: 130.156 ms
+Time: 113.757 ms
+Query 21.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 246.234 ms
+Time: 122.224 ms
+Time: 114.273 ms
+Time: 151.760 ms
+Time: 139.935 ms
+Query 22.sql
+Starting Quickstep with 32 worker thread(s) and a 100.43 GB buffer pool.
+Time: 42.657 ms
+Time: 36.083 ms
+Time: 49.417 ms
+Time: 29.888 ms
+Time: 43.120 ms
