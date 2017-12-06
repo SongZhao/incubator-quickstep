@@ -23,6 +23,7 @@
 #include <type_traits>
 
 #include "storage/BasicColumnStoreValueAccessor.hpp"
+#include "storage/BWColumnStoreValueAccessor.hpp"
 #include "storage/CompressedColumnStoreValueAccessor.hpp"
 #include "storage/CompressedPackedRowStoreValueAccessor.hpp"
 #include "storage/SplitRowStoreValueAccessor.hpp"
@@ -65,6 +66,8 @@ auto InvokeOnValueAccessorNotAdapter(
   switch (accessor->getImplementationType()) {
     case ValueAccessor::Implementation::kBasicColumnStore:
       return functor(static_cast<BasicColumnStoreValueAccessor*>(accessor));
+    case ValueAccessor::Implementation::kBWColumnStore:
+      return functor(static_cast<BWColumnStoreValueAccessor*>(accessor));
     case ValueAccessor::Implementation::kCompressedColumnStore:
       return functor(static_cast<CompressedColumnStoreValueAccessor*>(accessor));
     case ValueAccessor::Implementation::kCompressedPackedRowStore:
@@ -109,6 +112,10 @@ auto InvokeOnTupleIdSequenceAdapterValueAccessor(
     case ValueAccessor::Implementation::kBasicColumnStore:
       return functor(
           static_cast<TupleIdSequenceAdapterValueAccessor<BasicColumnStoreValueAccessor>*>(
+              accessor));
+    case ValueAccessor::Implementation::kBWColumnStore:
+      return functor(
+          static_cast<TupleIdSequenceAdapterValueAccessor<BWColumnStoreValueAccessor>*>(
               accessor));
     case ValueAccessor::Implementation::kCompressedColumnStore:
       return functor(
@@ -161,6 +168,10 @@ auto InvokeOnOrderedTupleIdSequenceAdapterValueAccessor(
     case ValueAccessor::Implementation::kBasicColumnStore:
       return functor(
           static_cast<OrderedTupleIdSequenceAdapterValueAccessor<BasicColumnStoreValueAccessor>*>(
+              accessor));
+    case ValueAccessor::Implementation::kBWColumnStore:
+      return functor(
+          static_cast<OrderedTupleIdSequenceAdapterValueAccessor<BWColumnStoreValueAccessor>*>(
               accessor));
     case ValueAccessor::Implementation::kCompressedColumnStore:
       return functor(

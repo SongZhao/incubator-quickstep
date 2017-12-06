@@ -76,6 +76,7 @@ class ValueAccessor {
   enum class Implementation {
     // Accessors for values inside a TupleStorageSubBlock:
     kBasicColumnStore,
+    kBWColumnStore,
     kCompressedColumnStore,
     kCompressedPackedRowStore,
     kSplitRowStore,

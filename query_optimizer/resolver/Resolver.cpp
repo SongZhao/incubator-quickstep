@@ -716,7 +716,7 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
   // Bw_bolumnstore
   } else if (type_string.compare("bw_columnstore") == 0) {
     description->set_sub_block_type(
-        quickstep::TupleStorageSubBlockDescription::BW_COLUMN_STORE);
+        quickstep::TupleStorageSubBlockDescription::BASIC_COLUMN_STORE);  //TODO
     block_allows_sort = true;
   } else {
     THROW_SQL_ERROR_AT(type_parse_string) << "Unrecognized storage type.";
@@ -726,7 +726,7 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
   const ParseString *sort_parse_string = block_properties->getSort();
   if (block_allows_sort) {
     if (sort_parse_string == nullptr) {
-      if (description->sub_block_type() != TupleStorageSubBlockDescription::BASIC_COLUMN_STORE) {
+      if (description->sub_block_type() != TupleStorageSubBlockDescription::BASIC_COLUMN_STORE || description->sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE ) {
         THROW_SQL_ERROR_AT(type_parse_string)
             << "The SORT property must be specified as an attribute name.";
       }
@@ -742,6 +742,10 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
             TupleStorageSubBlockDescription::BASIC_COLUMN_STORE) {
           description->SetExtension(
               BasicColumnStoreTupleStorageSubBlockDescription::sort_attribute_id, sort_id);
+        } else if (description->sub_block_type() ==
+            TupleStorageSubBlockDescription::BW_COLUMN_STORE) {
+          description->SetExtension(
+              BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id, sort_id);
         } else if (description->sub_block_type() ==
             TupleStorageSubBlockDescription::COMPRESSED_COLUMN_STORE) {
           description->SetExtension(

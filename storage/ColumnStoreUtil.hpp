@@ -30,6 +30,7 @@
 namespace quickstep {
 
 class BasicColumnStoreTupleStorageSubBlock;
+class BWColumnStoreTupleStorageSubBlock;
 class CatalogRelationSchema;
 class ComparisonPredicate;
 class CompressedColumnStoreTupleStorageSubBlock;
@@ -181,6 +182,7 @@ class ColumnStripeIterator : public std::iterator<std::random_access_iterator_ta
   tuple_id tuple_position_;
 
   friend class quickstep::BasicColumnStoreTupleStorageSubBlock;
+  friend class quickstep::BWColumnStoreTupleStorageSubBlock;
   friend class SortColumnPredicateEvaluator;
 };
 
