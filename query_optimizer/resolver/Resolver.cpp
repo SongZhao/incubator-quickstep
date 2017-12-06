@@ -713,6 +713,11 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
         quickstep::TupleStorageSubBlockDescription::COMPRESSED_COLUMN_STORE);
     block_allows_sort = true;
     block_requires_compress = true;
+  // Bw_bolumnstore
+  } else if (type_string.compare("bw_columnstore") == 0) {
+    description->set_sub_block_type(
+        quickstep::TupleStorageSubBlockDescription::BW_COLUMN_STORE);
+    block_allows_sort = true;
   } else {
     THROW_SQL_ERROR_AT(type_parse_string) << "Unrecognized storage type.";
   }
