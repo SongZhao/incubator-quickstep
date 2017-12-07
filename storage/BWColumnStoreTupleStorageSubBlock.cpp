@@ -103,7 +103,8 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
     const bool new_block,
     void *sub_block_memory,
     const std::size_t sub_block_memory_size)
-    : TupleStorageSubBlock(relation,
+    : BWTupleStorageSubBlock(relation,
+    //: TupleStorageSubBlock(relation,
                            description,
                            new_block,
                            sub_block_memory,
@@ -145,6 +146,15 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
     throw BlockMemoryTooSmall("BWColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
   }
   bitmap_required_bytes = BitVector<false>::BytesNeeded(max_tuples_);
+
+  {
+    //TODO Initialize
+    /*std::size_t header_size = getHeaderSize();
+    initialize(new_block,
+               static_cast<char*>(sub_block_memory) + header_size,
+               sub_block_memory_size - header_size);
+    */
+  }
 
   // Allocate memory for this sub-block's structures, starting with the header.
   char *memory_location = static_cast<char*>(sub_block_memory_) + sizeof(BWColumnStoreHeader);

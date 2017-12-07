@@ -27,6 +27,7 @@
 #include "expressions/predicate/PredicateCost.hpp"
 #include "storage/SubBlockTypeRegistryMacros.hpp"
 #include "storage/TupleStorageSubBlock.hpp"
+#include "storage/BWTupleStorageSubBlock.hpp"
 #include "types/TypedValue.hpp"
 #include "utility/BitVector.hpp"
 #include "utility/Macros.hpp"
@@ -49,14 +50,15 @@ QUICKSTEP_DECLARE_SUB_BLOCK_TYPE_REGISTERED(BWColumnStoreTupleStorageSubBlock);
  */
 
 /**
- * @brief An implementation of TupleStorageSubBlock as a simple column store
+ * @brief An implementation of TupleStorageSubBlock as a Bitweaving column store
  *        with a single sort column and no compression or holes.
  * @warning This implementation does NOT support variable-length attributes.
  *          It is an error to attempt to construct a
  *          BWColumnStoreTupleStorageSubBlock for a relation with any
  *          variable-length attributes.
  **/
-class BWColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
+class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
+//class BWColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
  public:
   BWColumnStoreTupleStorageSubBlock(const CatalogRelationSchema &relation,
                                        const TupleStorageSubBlockDescription &description,
@@ -98,8 +100,13 @@ class BWColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
    *         tuple of relation in a TupleStorageSubBlock of this type described
    *         by description.
    **/
+  
   static std::size_t EstimateBytesPerTuple(const CatalogRelationSchema &relation,
                                            const TupleStorageSubBlockDescription &description);
+
+  
+  // Kan:TODO EstimateBytesPerBlock
+
 
   bool supportsUntypedGetAttributeValue(const attribute_id attr) const override {
     return true;
@@ -137,6 +144,7 @@ class BWColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
 
   InsertResult insertTuple(const Tuple &tuple) override;
 
+  // Kan:TODO????
   bool insertTupleInBatch(const Tuple &tuple) override;
 
   tuple_id bulkInsertTuples(ValueAccessor *accessor) override;
@@ -151,6 +159,7 @@ class BWColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
   TypedValue getAttributeValueTyped(const tuple_id tuple,
                                     const attribute_id attr) const override;
 
+  // Kan:TODO Important?
   ValueAccessor* createValueAccessor(
       const TupleIdSequence *sequence = nullptr) const override;
 
@@ -161,7 +170,7 @@ class BWColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
   void setAttributeValueInPlaceTyped(const tuple_id tuple,
                                      const attribute_id attr,
                                      const TypedValue &value) override;
-
+  // Kan:TODO
   bool deleteTuple(const tuple_id tuple) override;
   bool bulkDeleteTuples(TupleIdSequence *tuples) override;
 
