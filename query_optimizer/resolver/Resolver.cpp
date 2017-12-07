@@ -726,7 +726,8 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
   const ParseString *sort_parse_string = block_properties->getSort();
   if (block_allows_sort) {
     if (sort_parse_string == nullptr) {
-      if (description->sub_block_type() != TupleStorageSubBlockDescription::BASIC_COLUMN_STORE || description->sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE ) {
+      if (description->sub_block_type() != TupleStorageSubBlockDescription::BASIC_COLUMN_STORE && description->sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE ) {
+        std::cout << "Get HERE! " << std::endl;
         THROW_SQL_ERROR_AT(type_parse_string)
             << "The SORT property must be specified as an attribute name.";
       }
