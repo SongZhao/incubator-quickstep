@@ -143,7 +143,8 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
   }
 
   InsertResult insertTuple(const Tuple &tuple) override;
-
+  private:
+	using WordUnit = std::size_t;
   // Kan:TODO????
   bool insertTupleInBatch(const Tuple &tuple) override;
 
@@ -233,9 +234,15 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
 
   attribute_id sort_column_id_;
   const Type *sort_column_type_;
-
+  int col;
+  int row;
   BWColumnStoreHeader *header_;
   std::vector<void*> column_stripes_;
+  std::vector<int> num_codes_per_word_;
+  std::vector<int> rol_array_;
+  std::vector<int> num_padding_bits_;
+ 
+  
   PtrVector<BitVector<false>, true> column_null_bitmaps_;
 
   DISALLOW_COPY_AND_ASSIGN(BWColumnStoreTupleStorageSubBlock);

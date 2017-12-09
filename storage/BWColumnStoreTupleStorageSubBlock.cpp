@@ -150,7 +150,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   {
     //TODO Initialize
     std::cout << "Constructing the bw class" << std::endl;
-    std::size_t header_size = getHeaderSize();
+    // std::size_t header_size = getHeaderSize();
     //initialize(new_block,
     //           static_cast<char*>(sub_block_memory) + header_size,
     //           sub_block_memory_size - header_size);
@@ -180,87 +180,101 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   // Column stripes.
   column_stripes_.resize(relation_.getMaxAttributeId() +  1, nullptr);
   for (const CatalogAttribute &attr : relation_) {
+    
     column_stripes_[attr.getID()] = memory_location;
     memory_location += max_tuples_ * attr.getType().maximumByteLength();
-  }
+  
+  //col and row for column_stripes
+  num_codes_per_word_.resize(relation_.getMaxAttributeId());
+  rol_array_.resize(relation_.getMaxAttributeId());
+  num_padding_bits_.resize(relation_.getMaxAttributeId());
+  for (const CatalogAttribute &attr : relation_) { 
+     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()>>3)+1); 	
+     num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * attr.getType().maximumByteLength();   
+	  // row_array_[attr.getID()] = max_tuples_ / col_array_[attr.getID()];
+	  }
 
-  DEBUG_ASSERT(memory_location
-               <= static_cast<const char*>(sub_block_memory_) + sub_block_memory_size_);
 
-  if (new_block) {
-    header_->num_tuples = 0;
-    header_->nulls_in_sort_column = 0;
-  }
-}
 
-bool BWColumnStoreTupleStorageSubBlock::DescriptionIsValid(
-    const CatalogRelationSchema &relation,
-    const TupleStorageSubBlockDescription &description) {
-  // Make sure description is initialized and specifies BWColumnStore.
-  std::cout << "Get in checking Description!!!!!!" <<std::endl;
-  if (!description.IsInitialized()) {
-    return false;
-  }
-  if (description.sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE) {
-    return false;
-  }
+	}
 
-  // Make sure relation is not variable-length.
-  if (relation.isVariableLength()) {
-    return false;
-  }
+	  DEBUG_ASSERT(memory_location
+		       <= static_cast<const char*>(sub_block_memory_) + sub_block_memory_size_);
 
-  // If a sort attribute is specified, check that it exists and can be ordered
-  // by LessComparison.
-  if (description.HasExtension(
-          BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id)) {
-    const attribute_id sort_attribute_id = description.GetExtension(
-        BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id);
-    if (!relation.hasAttributeWithId(sort_attribute_id)) {
-      return false;
-    }
-    const Type &sort_attribute_type =
-        relation.getAttributeById(sort_attribute_id)->getType();
-    if (!ComparisonFactory::GetComparison(ComparisonID::kLess).canCompareTypes(
-            sort_attribute_type, sort_attribute_type)) {
-      return false;
-    }
-  }
+	  if (new_block) {
+	    header_->num_tuples = 0;
+	    header_->nulls_in_sort_column = 0;
+	  }
+	}
 
-  return true;
-}
+	bool BWColumnStoreTupleStorageSubBlock::DescriptionIsValid(
+	    const CatalogRelationSchema &relation,
+	    const TupleStorageSubBlockDescription &description) {
+	  // Make sure description is initialized and specifies BWColumnStore.
+	  std::cout << "Get in checking Description!!!!!!" <<std::endl;
+	  if (!description.IsInitialized()) {
+	    return false;
+	  }
+	  if (description.sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE) {
+	    return false;
+	  }
 
-std::size_t BWColumnStoreTupleStorageSubBlock::EstimateBytesPerTuple(
-    const CatalogRelationSchema &relation,
-    const TupleStorageSubBlockDescription &description) {
-  DEBUG_ASSERT(DescriptionIsValid(relation, description));
+	  // Make sure relation is not variable-length.
+	  if (relation.isVariableLength()) {
+	    return false;
+	  }
 
-  // NOTE(chasseur): We round-up the number of bytes needed in the NULL bitmaps
-  // to avoid estimating 0 bytes needed for a relation with less than 8
-  // attributes which are all NullType.
-  return relation.getFixedByteLength()
-         + ((relation.numNullableAttributes() + 7) >> 3);
-}
+	  // If a sort attribute is specified, check that it exists and can be ordered
+	  // by LessComparison.
+	  if (description.HasExtension(
+		  BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id)) {
+	    const attribute_id sort_attribute_id = description.GetExtension(
+		BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id);
+	    if (!relation.hasAttributeWithId(sort_attribute_id)) {
+	      return false;
+	    }
+	    const Type &sort_attribute_type =
+		relation.getAttributeById(sort_attribute_id)->getType();
+	    if (!ComparisonFactory::GetComparison(ComparisonID::kLess).canCompareTypes(
+		    sort_attribute_type, sort_attribute_type)) {
+	      return false;
+	    }
+	  }
 
-TupleStorageSubBlock::InsertResult BWColumnStoreTupleStorageSubBlock::insertTuple(
-    const Tuple &tuple) {
-#ifdef QUICKSTEP_DEBUG
-  paranoidInsertTypeCheck(tuple);
-#endif
-  if (!hasSpaceToInsert(1)) {
-    return InsertResult(-1, false);
-  }
+	  return true;
+	}
 
-  tuple_id insert_position = header_->num_tuples;
-  // If this column store is unsorted, or the value of the sort column is NULL,
-  // skip the search and put the new tuple at the end of everything else.
-  if (sort_specified_ && !tuple.getAttributeValue(sort_column_id_).isNull()) {
-    // Binary search for the appropriate insert location.
-    ColumnStripeIterator begin_it(column_stripes_[sort_column_id_],
-                                  relation_.getAttributeById(sort_column_id_)->getType().maximumByteLength(),
-                                  0);
-    ColumnStripeIterator end_it(column_stripes_[sort_column_id_],
-                                relation_.getAttributeById(sort_column_id_)->getType().maximumByteLength(),
+	std::size_t BWColumnStoreTupleStorageSubBlock::EstimateBytesPerTuple(
+	    const CatalogRelationSchema &relation,
+	    const TupleStorageSubBlockDescription &description) {
+	  DEBUG_ASSERT(DescriptionIsValid(relation, description));
+
+	  // NOTE(chasseur): We round-up the number of bytes needed in the NULL bitmaps
+	  // to avoid estimating 0 bytes needed for a relation with less than 8
+	  // attributes which are all NullType.
+	  return relation.getFixedByteLength()
+		 + ((relation.numNullableAttributes() + 7) >> 3);
+	}
+
+	TupleStorageSubBlock::InsertResult BWColumnStoreTupleStorageSubBlock::insertTuple(
+	    const Tuple &tuple) {
+	#ifdef QUICKSTEP_DEBUG
+	  paranoidInsertTypeCheck(tuple);
+	#endif
+	  if (!hasSpaceToInsert(1)) {
+	    return InsertResult(-1, false);
+	  }
+
+	  tuple_id insert_position = header_->num_tuples;
+	  // If this column store is unsorted, or the value of the sort column is NULL,
+	  // skip the search and put the new tuple at the end of everything else.
+	  if (sort_specified_ && !tuple.getAttributeValue(sort_column_id_).isNull()) {
+	    // Binary search for the appropriate insert location.
+	    ColumnStripeIterator begin_it(column_stripes_[sort_column_id_],
+					  relation_.getAttributeById(sort_column_id_)->getType().maximumByteLength(),
+					  0);
+	    ColumnStripeIterator end_it(column_stripes_[sort_column_id_],
+					relation_.getAttributeById(sort_column_id_)->getType().maximumByteLength(),
                                 header_->num_tuples - header_->nulls_in_sort_column);
     insert_position = GetBoundForUntypedValue<ColumnStripeIterator, UpperBoundFunctor>(
         *sort_column_type_,
@@ -302,11 +316,13 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
         for (CatalogRelationSchema::const_iterator attr_it = relation_.begin();
              attr_it != relation_.end();
              ++attr_it) {
+  std::cout << "attr_it is " << attr_it->getID() <<  std::endl;
           const attribute_id attr_id = attr_it->getID();
           const std::size_t attr_size = attr_it->getType().maximumByteLength();
           if (attr_it->getType().isNullable()) {
             const void *attr_value
                 = accessor->template getUntypedValue<true>(accessor_attr_id);
+  std::cout << "attr_value is " << attr_value << std::endl;
             if (attr_value == nullptr) {
               column_null_bitmaps_[attr_id].setBit(header_->num_tuples, true);
             } else {
@@ -316,6 +332,7 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
                      attr_size);
             }
           } else {
+  std::cout << "else attr value is " << accessor->template getUntypedValue<false>(accessor_attr_id) << std::endl;
             memcpy(static_cast<char*>(column_stripes_[attr_id])
                        + header_->num_tuples * attr_size,
                    accessor->template getUntypedValue<false>(accessor_attr_id),
@@ -332,12 +349,40 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
              attr_it != relation_.end();
              ++attr_it) {
           const std::size_t attr_size = attr_it->getType().maximumByteLength();
-          memcpy(static_cast<char*>(column_stripes_[attr_it->getID()])
-                     + header_->num_tuples * attr_size,
+  std::cout << "no null attributes" << accessor->template getUntypedValue<false>(accessor_attr_id)<< std::endl;
+  std::cout << "attr_it->getID()" <<attr_it->getID() << std::endl;
+  std::cout << "column stripe " << column_stripes_[attr_it->getID()] << std::endl;
+  std::cout << "offset" << header_->num_tuples << std::endl;
+  std::cout << "attr size" << attr_size << std::endl;
+  std::cout << "accessor id" << accessor_attr_id << std::endl;
+           col = header_->num_tuples /(num_codes_per_word_[attr_it->getID()]);
+           row = header_->num_tuples % (num_codes_per_word_[attr_it->getID()]);
+ 	 memcpy(static_cast<char*>(column_stripes_[attr_it->getID()])
+                   + col * attr_size + row * sizeof(WordUnit),
                  accessor->template getUntypedValue<false>(accessor_attr_id),
                  attr_size);
+  std::cout << "attr_it->getID()char " <<static_cast<char*>( column_stripes_[attr_it->getID()] + col * attr_size + row * sizeof(WordUnit)) << std::endl;
           ++accessor_attr_id;
         }
+	//print table
+  std::cout << "max # tuple " << max_tuples_ << std::endl;
+	for(int  i=0; i < header_->num_tuples; i++)
+	{
+		for(CatalogRelationSchema::const_iterator attr_it = relation_.begin(); attr_it != relation_.end(); ++attr_it)
+		{
+           	std::cout << "item#     " << i << std::endl;
+  		std::cout << "attr#     " <<attr_it->getID() << std::endl;
+
+		col = i /(num_codes_per_word_[attr_it->getID()]);
+                row = i  % (num_codes_per_word_[attr_it->getID()]);
+  std::cout << "col is     " << col << std::endl;
+  std::cout << "row is     " << row << std::endl;
+		
+                  const std::size_t attr_size = attr_it->getType().maximumByteLength();
+  			std::cout << "column value is   " <<static_cast<char*>( column_stripes_[attr_it->getID()] + col * attr_size + row * sizeof(WordUnit)) << std::endl;
+		
+		}
+	}
         ++(header_->num_tuples);
       }
     }
