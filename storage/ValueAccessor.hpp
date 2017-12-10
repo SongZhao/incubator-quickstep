@@ -1046,6 +1046,7 @@ class ColumnAccessor {
    * @return An untyped pointer to the attribute value for the current tuple.
    **/
   inline const void* getUntypedValue() const {
+    std::cout << "Try to get a untyped value" <<std::endl;
     DCHECK(current_tuple_position_ < num_tuples_);
     if (check_null) {
       DCHECK(null_bitmap_ != nullptr);

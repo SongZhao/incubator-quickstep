@@ -73,6 +73,16 @@ class BWTupleStorageSubBlock : public TupleStorageSubBlock {
                            sub_block_memory_size) {
   }
 
+  TypedValue getAttributeValueTyped(const tuple_id tuple,
+                                    const attribute_id attr) const override {
+
+  std::cout << "get attribute value typed from BWColumnStore_Basis" << std::endl;
+  const Type &attr_type = relation_.getAttributeById(attr)->getType();
+  const void *untyped_value = getAttributeValue(tuple, attr);
+  return (untyped_value == nullptr)
+      ? attr_type.makeNullValue()
+      : attr_type.makeValue(untyped_value, attr_type.maximumByteLength());
+  }
 
   DISALLOW_COPY_AND_ASSIGN(BWTupleStorageSubBlock);
 };

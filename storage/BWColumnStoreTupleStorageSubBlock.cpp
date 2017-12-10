@@ -149,12 +149,12 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 
   {
     //TODO Initialize
-    std::cout << "Constructing the bw class" << std::endl;
-    std::size_t header_size = getHeaderSize();
+    std::cout << "Constructing the bw class" << ", Max tuples: " << max_tuples_ << std::endl;
+    //std::size_t header_size = getHeaderSize();
     //initialize(new_block,
     //           static_cast<char*>(sub_block_memory) + header_size,
     //           sub_block_memory_size - header_size);
-    
+    // BWColumnStoreHeader?????? TODO
   }
 
   // Allocate memory for this sub-block's structures, starting with the header.
@@ -197,7 +197,6 @@ bool BWColumnStoreTupleStorageSubBlock::DescriptionIsValid(
     const CatalogRelationSchema &relation,
     const TupleStorageSubBlockDescription &description) {
   // Make sure description is initialized and specifies BWColumnStore.
-  std::cout << "Get in checking Description!!!!!!" <<std::endl;
   if (!description.IsInitialized()) {
     return false;
   }
@@ -247,6 +246,7 @@ TupleStorageSubBlock::InsertResult BWColumnStoreTupleStorageSubBlock::insertTupl
 #ifdef QUICKSTEP_DEBUG
   paranoidInsertTypeCheck(tuple);
 #endif
+  std::cout << "Get in insertTuple!" << std::endl;
   if (!hasSpaceToInsert(1)) {
     return InsertResult(-1, false);
   }
@@ -290,7 +290,7 @@ bool BWColumnStoreTupleStorageSubBlock::insertTupleInBatch(const Tuple &tuple) {
 
 tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *accessor) {
   const tuple_id original_num_tuples = header_->num_tuples;
-  std::cout << "Get Here!" << std::endl;
+  std::cout << "Get in bulkInsertTuples!" << std::endl;
   InvokeOnAnyValueAccessor(
       accessor,
       [&](auto *accessor) -> void {  // NOLINT(build/c++11)
@@ -416,7 +416,7 @@ const void* BWColumnStoreTupleStorageSubBlock::getAttributeValue(
     const attribute_id attr) const {
   DEBUG_ASSERT(hasTupleWithID(tuple));
   DEBUG_ASSERT(relation_.hasAttributeWithId(attr));
-
+  std::cout << "Try to get attribute " << attr << " of tuple " << tuple << std::endl;
   if ((!column_null_bitmaps_.elementIsNull(attr))
       && column_null_bitmaps_[attr].getBit(tuple)) {
     return nullptr;
@@ -428,7 +428,9 @@ const void* BWColumnStoreTupleStorageSubBlock::getAttributeValue(
 
 TypedValue BWColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
     const tuple_id tuple,
-    const attribute_id attr) const {
+    const attribute_id attr) const {   //override?
+
+  std::cout << "get attribute value typed from BWColumnStore" << std::endl;
   const Type &attr_type = relation_.getAttributeById(attr)->getType();
   const void *untyped_value = getAttributeValue(tuple, attr);
   return (untyped_value == nullptr)
@@ -588,6 +590,7 @@ bool BWColumnStoreTupleStorageSubBlock::bulkDeleteTuples(TupleIdSequence *tuples
 
 predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationCost(
     const ComparisonPredicate &predicate) const {
+  std::cout << "Get in estimateEvaluationCost" << std::endl;
   if (sort_specified_ && predicate.isAttributeLiteralComparisonPredicate()) {
     std::pair<bool, attribute_id> comparison_attr = predicate.getAttributeFromAttributeLiteralComparison();
     if (comparison_attr.second == sort_column_id_) {
@@ -600,6 +603,8 @@ predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationC
 TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForPredicate(
     const ComparisonPredicate &predicate,
     const TupleIdSequence *filter) const {
+  std::cout << "Get in getMatchesForPredicate" << std::endl;
+
   DCHECK(sort_specified_) <<
       "Called BWColumnStoreTupleStorageSubBlock::getMatchesForPredicate() "
       "for an unsorted column store (predicate should have been evaluated "

@@ -139,6 +139,8 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
   }
 
   bool hasTupleWithID(const tuple_id tuple) const override {
+    std::cout << "Checking this tuple whether in block" << std::endl;
+    //return false;
     return ((tuple >=0) && (tuple < header_->num_tuples));
   }
 

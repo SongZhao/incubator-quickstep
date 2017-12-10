@@ -111,6 +111,7 @@ inline std::vector<TypedValue> ExecuteQueryForSingleRow(
   QueryExecutionUtil::ReceiveQueryCompletionMessage(main_thread_client_id, bus);
 
   // Retrieve the scalar result from the result relation.
+  std::cout << "In commandexecutor, preparing to print out the results" << std::endl;
   std::vector<TypedValue> values;
   {
     std::vector<block_id> blocks = query_result_relation->getBlocksSnapshot();
@@ -293,6 +294,7 @@ void executeCommand(const ParseStatement &statement,
                     StorageManager *storage_manager,
                     QueryProcessor *query_processor,
                     FILE *out) {
+  std::cout << "Starting to execute a command" << std::endl;
   const ParseCommand &command = static_cast<const ParseCommand &>(statement);
   const PtrVector<ParseString> &arguments = *(command.arguments());
   const std::string &command_str = command.command()->value();

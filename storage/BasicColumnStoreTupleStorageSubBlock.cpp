@@ -417,6 +417,7 @@ const void* BasicColumnStoreTupleStorageSubBlock::getAttributeValue(
 TypedValue BasicColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
     const tuple_id tuple,
     const attribute_id attr) const {
+  std::cout << "Get Here 1!!!!!" << std::endl;
   const Type &attr_type = relation_.getAttributeById(attr)->getType();
   const void *untyped_value = getAttributeValue(tuple, attr);
   return (untyped_value == nullptr)

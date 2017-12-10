@@ -481,6 +481,7 @@ const void* SplitRowStoreTupleStorageSubBlock::getAttributeValue(
 TypedValue SplitRowStoreTupleStorageSubBlock::getAttributeValueTyped(
     const tuple_id tuple,
     const attribute_id attr) const {
+  std::cout << "Get attribute value from splitrow store" << std::endl;
   DEBUG_ASSERT(occupancy_bitmap_->getBit(tuple));
   DEBUG_ASSERT(relation_.hasAttributeWithId(attr));
   const Type &attr_type = relation_.getAttributeById(attr)->getType();

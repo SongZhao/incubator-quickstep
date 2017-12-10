@@ -172,6 +172,7 @@ class StorageBlock : public StorageBlockBase {
    * @return This block's TupleStorageSubBlock.
    **/
   inline const TupleStorageSubBlock& getTupleStorageSubBlock() const {
+    std::cout << "Trying to get a storage sub block" << std::endl;
     return *tuple_store_;
   }
 

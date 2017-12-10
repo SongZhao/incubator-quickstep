@@ -388,6 +388,7 @@ int main(int argc, char* argv[]) {
           end = std::chrono::steady_clock::now();
 
           if (query_result_relation) {
+            std::cout << "===== We have got the result relation" << std::endl;
             PrintToScreen::PrintRelation(*query_result_relation,
                                          &storage_manager,
                                          io_handle->out());

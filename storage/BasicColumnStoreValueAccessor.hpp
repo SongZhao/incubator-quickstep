@@ -125,6 +125,7 @@ class BasicColumnStoreValueAccessorHelper {
 
   inline TypedValue getAttributeValueTyped(const tuple_id tuple,
                                            const attribute_id attr) const {
+    std::cout << "Get Here2!!!!!" << std::endl;
     const Type &attr_type = relation_.getAttributeById(attr)->getType();
     const void *untyped_value = getAttributeValue<true>(tuple, attr);
     return (untyped_value == nullptr)

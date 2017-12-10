@@ -81,6 +81,7 @@ class BWColumnStoreValueAccessorHelper {
   template <bool check_null = true>
   inline const ColumnAccessor<check_null>* getColumnAccessor(const tuple_id &current_tuple_position,
                                                              const attribute_id attr_id) const {
+    std::cout << "Try to get a column accessor" << std::endl;
     DCHECK(relation_.hasAttributeWithId(attr_id));
     const void* base_location = static_cast<const char*>(column_stripes_[attr_id]);
     const std::size_t stride = relation_.getAttributeById(attr_id)->getType().maximumByteLength();
@@ -125,6 +126,9 @@ class BWColumnStoreValueAccessorHelper {
 
   inline TypedValue getAttributeValueTyped(const tuple_id tuple,
                                            const attribute_id attr) const {
+    //Kan: test
+    std::cout << "Try to get a value with type through BWColumnStoreValueAccessor" << std::endl;
+
     const Type &attr_type = relation_.getAttributeById(attr)->getType();
     const void *untyped_value = getAttributeValue<true>(tuple, attr);
     return (untyped_value == nullptr)
