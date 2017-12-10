@@ -186,12 +186,37 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   
   //col and row for column_stripes
   num_codes_per_word_.resize(relation_.getMaxAttributeId());
-  rol_array_.resize(relation_.getMaxAttributeId());
-  num_padding_bits_.resize(relation_.getMaxAttributeId());
+  rol_array_.resize(relation_.getMaxAttributeId()); //currently unused
+  num_padding_bits_.resize(relation_.getMaxAttributeId()); 
+  num_codes_per_segment_.resize(relation_.getMaxAttributeId());
+  num_words_per_segment_.resize(relation_.getMaxAttributeId());
+  num_words_per_code_.resize(relation_.getMaxAttributeId());
+  std::cout << "wordunit is " << (sizeof(WordUnit)<<3) << std::endl; 
+  std::cout << "attr length is " << attr.getType().maximumByteLength()<<3 + 1 << std::endl; 
   for (const CatalogAttribute &attr : relation_) { 
-     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()>>3)+1); 	
+     if(num_codes_per_word_[attr.getID()] == 0)
+	{
+     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
+		num_words_per_code_[attr.getID()] = ((attr.getType().maximumByteLength()<<3)+1)/(sizeof(WordUnit)<<3) + 1;
+     		num_codes_per_segment_[attr.getID()] =  ((attr.getType().maximumByteLength()<<3)+1); //some sort of hard coding for now
+     		num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) * num_words_per_code_[attr.getID()] - attr.getType().maximumByteLength();   
+		
+	}
+	else
+	{
+     num_words_per_code_[attr.getID()] = 1;
+     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
+     num_codes_per_segment_[attr.getID()] = num_codes_per_word_[attr.getID()] * ((attr.getType().maximumByteLength()<<3)+1); 
      num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * attr.getType().maximumByteLength();   
-	  // row_array_[attr.getID()] = max_tuples_ / col_array_[attr.getID()];
+	}
+     std::cout << "#word/code for attr " << attr.getID() << " is " << num_words_per_code_[attr.getID()] << std::endl;
+
+     std::cout << "#codes/word for attr " << attr.getID() << " is " << num_codes_per_word_[attr.getID()] << std::endl;
+     std::cout << "#codes/segment for attr " << attr.getID() << " is " << num_codes_per_segment_[attr.getID()] << std::endl;
+	 
+    num_words_per_segment_[attr.getID()] = ((attr.getType().maximumByteLength() << 3) + 1) * num_words_per_code_[attr.getID()]; 
+     std::cout << "#word/segment for attr " << attr.getID() << " is " << num_words_per_segment_[attr.getID()] << std::endl;
+	 // row_array_[attr.getID()] = max_tuples_ / col_array_[attr.getID()];
 	  }
 
 
@@ -349,37 +374,70 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
              attr_it != relation_.end();
              ++attr_it) {
           const std::size_t attr_size = attr_it->getType().maximumByteLength();
-  std::cout << "no null attributes" << accessor->template getUntypedValue<false>(accessor_attr_id)<< std::endl;
-  std::cout << "attr_it->getID()" <<attr_it->getID() << std::endl;
-  std::cout << "column stripe " << column_stripes_[attr_it->getID()] << std::endl;
-  std::cout << "offset" << header_->num_tuples << std::endl;
-  std::cout << "attr size" << attr_size << std::endl;
-  std::cout << "accessor id" << accessor_attr_id << std::endl;
-           col = header_->num_tuples /(num_codes_per_word_[attr_it->getID()]);
-           row = header_->num_tuples % (num_codes_per_word_[attr_it->getID()]);
- 	 memcpy(static_cast<char*>(column_stripes_[attr_it->getID()])
-                   + col * attr_size + row * sizeof(WordUnit),
+  	  std::cout << "attr_it->getID()" <<attr_it->getID() << std::endl;
+  	  std::cout << "column stripe " << column_stripes_[attr_it->getID()] << std::endl;
+  	  std::cout << "offset" << header_->num_tuples << std::endl;
+  	  std::cout << "attr size" << attr_size << std::endl;
+  	  std::cout << "accessor id" << accessor_attr_id << std::endl;
+	  num_tuple_in_current_segment = header_->num_tuples % num_codes_per_segment_[attr_it->getID()];
+          nth_segment = header_->num_tuples / num_codes_per_segment_[attr_it->getID()];
+	  if(num_codes_per_word_[attr_it->getID()] != 0)
+		{
+		 int row_size = ((attr_it->getType().maximumByteLength()<<3)*num_words_per_code_[attr_it->getID()]);
+	 	 std::cout << "row size for this attr's segment is " << row_size << std::endl;
+           	 col = num_tuple_in_current_segment / row_size;
+           	 row = num_tuple_in_current_segment % row_size;
+		}
+	  else
+		{
+	         col = 0;
+		 row = num_tuple_in_current_segment;
+		}		
+  		 std::cout << "offset1 is  " << col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()] << std::endl;
+ 		 std::cout << "offset2 is  " << nth_segment * num_words_per_segment_[attr_it->getID()] << std::endl;
+ 	 	 std::cout << "addr is " << (column_stripes_[attr_it->getID()]
+                   + col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
+		   + nth_segment * num_words_per_segment_[attr_it->getID()]) << std::endl;
+ 	 memcpy(static_cast<char*>(column_stripes_[attr_it->getID()]
+                   + col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
+		   + nth_segment * num_words_per_segment_[attr_it->getID()]),
                  accessor->template getUntypedValue<false>(accessor_attr_id),
                  attr_size);
-  std::cout << "attr_it->getID()char " <<static_cast<char*>( column_stripes_[attr_it->getID()] + col * attr_size + row * sizeof(WordUnit)) << std::endl;
           ++accessor_attr_id;
         }
 	//print table
-  std::cout << "max # tuple " << max_tuples_ << std::endl;
+  	std::cout << "max # tuple " << max_tuples_ << std::endl;
 	for(int  i=0; i < header_->num_tuples; i++)
 	{
 		for(CatalogRelationSchema::const_iterator attr_it = relation_.begin(); attr_it != relation_.end(); ++attr_it)
 		{
-           	std::cout << "item#     " << i << std::endl;
-  		std::cout << "attr#     " <<attr_it->getID() << std::endl;
-
-		col = i /(num_codes_per_word_[attr_it->getID()]);
-                row = i  % (num_codes_per_word_[attr_it->getID()]);
-  std::cout << "col is     " << col << std::endl;
-  std::cout << "row is     " << row << std::endl;
-		
-                  const std::size_t attr_size = attr_it->getType().maximumByteLength();
-  			std::cout << "column value is   " <<static_cast<char*>( column_stripes_[attr_it->getID()] + col * attr_size + row * sizeof(WordUnit)) << std::endl;
+	  	 num_tuple_in_current_segment = i  % num_codes_per_segment_[attr_it->getID()];
+          	 nth_segment = i  / num_codes_per_segment_[attr_it->getID()];
+			
+           	 std::cout << "item#     " << i << std::endl;
+  		 std::cout << "attr#     " <<attr_it->getID() << std::endl;
+		 if(num_codes_per_word_[attr_it->getID()] != 0)
+		 {
+		 	int row_size = ((attr_it->getType().maximumByteLength()<<3)*num_words_per_code_[attr_it->getID()]);
+		 	col = i / row_size;
+                 	row = i  % row_size;
+  		 }
+		 else
+		 {
+			col = 0;
+			row = num_tuple_in_current_segment; 
+		 }
+		 		
+                 const std::size_t attr_size = attr_it->getType().maximumByteLength();
+		 std::cout << "col is     " << col << "row is " << row << std::endl;
+  		 std::cout << "offset1 is  " << col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()] << std::endl;
+ 		 std::cout << "offset2 is  " << nth_segment * num_words_per_segment_[attr_it->getID()] << std::endl;
+	   	 std::cout << "addr is  "  <<(column_stripes_[attr_it->getID()] + 
+			col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
+			+ nth_segment * num_words_per_segment_[attr_it->getID()]) << std::endl;
+  		 std::cout << "column value is   " <<static_cast<char*>( column_stripes_[attr_it->getID()] + 
+			col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
+			+ nth_segment * num_words_per_segment_[attr_it->getID()]) << std::endl;
 		
 		}
 	}

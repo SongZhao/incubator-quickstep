@@ -236,12 +236,16 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
   const Type *sort_column_type_;
   int col;
   int row;
+  int num_tuple_in_current_segment;
+  int nth_segment;
   BWColumnStoreHeader *header_;
   std::vector<void*> column_stripes_;
   std::vector<int> num_codes_per_word_;
   std::vector<int> rol_array_;
   std::vector<int> num_padding_bits_;
- 
+  std::vector<int> num_codes_per_segment_;
+  std::vector<int> num_words_per_segment_;
+  std::vector<int> num_words_per_code_;
   
   PtrVector<BitVector<false>, true> column_null_bitmaps_;
 
