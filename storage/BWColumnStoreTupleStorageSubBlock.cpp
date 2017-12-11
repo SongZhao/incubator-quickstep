@@ -193,10 +193,10 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   num_words_per_code_.resize(relation_.getMaxAttributeId());
   std::cout << "wordunit is " << (sizeof(WordUnit)<<3) << std::endl; 
   std::cout << "attr length is " << attr.getType().maximumByteLength()<<3 + 1 << std::endl; 
+     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
   for (const CatalogAttribute &attr : relation_) { 
      if(num_codes_per_word_[attr.getID()] == 0)
 	{
-     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
 		num_words_per_code_[attr.getID()] = ((attr.getType().maximumByteLength()<<3)+1)/(sizeof(WordUnit)<<3) + 1;
      		num_codes_per_segment_[attr.getID()] =  ((attr.getType().maximumByteLength()<<3)+1); //some sort of hard coding for now
      		num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) * num_words_per_code_[attr.getID()] - attr.getType().maximumByteLength();   
@@ -205,7 +205,6 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 	else
 	{
      num_words_per_code_[attr.getID()] = 1;
-     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
      num_codes_per_segment_[attr.getID()] = num_codes_per_word_[attr.getID()] * ((attr.getType().maximumByteLength()<<3)+1); 
      num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * attr.getType().maximumByteLength();   
 	}
@@ -214,7 +213,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
      std::cout << "#codes/word for attr " << attr.getID() << " is " << num_codes_per_word_[attr.getID()] << std::endl;
      std::cout << "#codes/segment for attr " << attr.getID() << " is " << num_codes_per_segment_[attr.getID()] << std::endl;
 	 
-    num_words_per_segment_[attr.getID()] = ((attr.getType().maximumByteLength() << 3) + 1) * num_words_per_code_[attr.getID()]; 
+    num_words_per_segment_[attr.getID()] = ((attr.getType().maximumByteLength() << 3) * num_words_per_code_[attr.getID()]); 
      std::cout << "#word/segment for attr " << attr.getID() << " is " << num_words_per_segment_[attr.getID()] << std::endl;
 	 // row_array_[attr.getID()] = max_tuples_ / col_array_[attr.getID()];
 	  }
@@ -383,14 +382,14 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
           nth_segment = header_->num_tuples / num_codes_per_segment_[attr_it->getID()];
 	  if(num_codes_per_word_[attr_it->getID()] != 0)
 		{
-		 int row_size = ((attr_it->getType().maximumByteLength()<<3)*num_words_per_code_[attr_it->getID()]);
-	 	 std::cout << "row size for this attr's segment is " << row_size << std::endl;
-           	 col = num_tuple_in_current_segment / row_size;
-           	 row = num_tuple_in_current_segment % row_size;
+		// int row_size = ((attr_it->getType().maximumByteLength()<<3)*num_words_per_code_[attr_it->getID()]);
+	 	// std::cout << "row size for this attr's segment is " << row_size << std::endl;
+           	// col = num_tuple_in_current_segment / row_size;
+           	 row = num_tuple_in_current_segment;
 		}
 	  else
 		{
-	         col = 0;
+	        // col = 0;
 		 row = num_tuple_in_current_segment;
 		}		
   		 std::cout << "offset1 is  " << col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()] << std::endl;
@@ -399,13 +398,14 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
                    + col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
 		   + nth_segment * num_words_per_segment_[attr_it->getID()]) << std::endl;
  	 memcpy(static_cast<char*>(column_stripes_[attr_it->getID()]
-                   + col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
-		   + nth_segment * num_words_per_segment_[attr_it->getID()]),
+                   +  row * (sizeof(WordUnit)<<3) * num_words_per_code_[attr_it->getID()]
+		   + nth_segment * num_words_per_segment_[attr_it->getID()] * (sizeof(WordUnit)<<3)),
                  accessor->template getUntypedValue<false>(accessor_attr_id),
                  attr_size);
           ++accessor_attr_id;
         }
 	//print table
+	 /*
   	std::cout << "max # tuple " << max_tuples_ << std::endl;
 	for(int  i=0; i < header_->num_tuples; i++)
 	{
@@ -440,7 +440,7 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
 			+ nth_segment * num_words_per_segment_[attr_it->getID()]) << std::endl;
 		
 		}
-	}
+	}*/
         ++(header_->num_tuples);
       }
     }

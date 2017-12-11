@@ -31,7 +31,7 @@
 #include "utility/BitVector.hpp"
 #include "utility/Macros.hpp"
 #include "utility/PtrVector.hpp"
-
+#include "storage/BWColumnStoreTupleStorageSubBlock.hpp"
 namespace quickstep {
 
 class BWColumnStoreTupleStorageSubBlock;
@@ -116,11 +116,44 @@ class BWColumnStoreValueAccessorHelper {
         && (!column_null_bitmaps_.elementIsNull(attr))
         && column_null_bitmaps_[attr].getBit(tuple)) {
       return nullptr;
-    }
-
-    // TODO(chasseur): Consider cacheing the byte lengths of attributes.
-    return static_cast<const char*>(column_stripes_[attr])
-           + (tuple * relation_.getAttributeById(attr)->getType().maximumByteLength());
+    } 
+  //num_codes_per_word_.resize(relation_.getMaxAttributeId());
+ // num_codes_per_segment_.resize(relation_.getMaxAttributeId());
+ // num_words_per_segment_.resize(relation_.getMaxAttributeId());
+ // num_words_per_code_.resize(relation_.getMaxAttributeId());
+  //    int  num  = (sizeof(WordUnit)<<3)/((relation_.getAttributeById(attr)->getType().maximumByteLength()<<3)+1);
+      int num_w_p_c, n_c_p_s, n_t_i_c_s, n_s, col, row, n_w_p_s;
+      int  num  = 64 / ((relation_.getAttributeById(attr)->getType().maximumByteLength()<<3)+1);
+ 	if(num  == 0)
+	{
+       	num_w_p_c = ((relation_.getAttributeById(attr)->getType().maximumByteLength()<<3)+1)/64 + 1;
+   	n_c_p_s =  ((relation_.getAttributeById(attr)->getType().maximumByteLength()<<3));		
+	}
+	else
+	{
+     		num_w_p_c  = 1;
+     		n_c_p_s = num  * ((relation_.getAttributeById(attr)->getType().maximumByteLength()<<3)); 
+	}
+    n_w_p_s = num_w_p_c * (relation_.getAttributeById(attr)->getType().maximumByteLength()<<3);
+    n_t_i_c_s  = tuple % n_c_p_s;
+    n_s = tuple / n_c_p_s;
+    std::cout << "tuple # is " << tuple << std::endl;
+    std::cout << "in accessor, n_s is "<< n_s << "item number in CS is " << n_t_i_c_s << "num of word/code is " << n_w_p_s << std::endl;
+   if(num != 0)
+		{
+		 int row_size = ((relation_.getAttributeById(attr)->getType().maximumByteLength()<<3)*num_w_p_c);
+	 	 std::cout << "row size for this attr's segment is " << row_size << std::endl;
+           	 col = n_t_i_c_s / row_size;
+           	 row = n_t_i_c_s % row_size;
+		}
+	  else
+		{
+	         col = 0;
+		 row = n_t_i_c_s;
+		}
+    return static_cast<const char*>(column_stripes_[attr]
+           +  row * (sizeof(std::size_t)<<3)  * num_w_p_c
+                        + n_s * n_w_p_s * (sizeof(std::size_t)<<3));
   }
 
   inline TypedValue getAttributeValueTyped(const tuple_id tuple,
