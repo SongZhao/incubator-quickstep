@@ -321,6 +321,7 @@ TupleIdSequence* LiteralUncheckedComparator<ComparisonFunctor,
         const attribute_id value_accessor_attr_id,
         const TypedValue &static_value,
         const TupleIdSequence *filter) const {
+  std::cout << "------- get in helper from literal_inline" << std::endl;
   return InvokeOnValueAccessorMaybeTupleIdSequenceAdapter(
       accessor,
       [&](auto *accessor) -> TupleIdSequence* {  // NOLINT(build/c++11)

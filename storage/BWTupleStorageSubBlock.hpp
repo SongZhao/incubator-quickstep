@@ -73,7 +73,7 @@ class BWTupleStorageSubBlock : public TupleStorageSubBlock {
                            sub_block_memory_size) {
   }
 
-  TypedValue getAttributeValueTyped(const tuple_id tuple,
+  /*TypedValue getAttributeValueTyped(const tuple_id tuple,
                                     const attribute_id attr) const override {
 
   std::cout << "get attribute value typed from BWColumnStore_Basis" << std::endl;
@@ -82,8 +82,23 @@ class BWTupleStorageSubBlock : public TupleStorageSubBlock {
   return (untyped_value == nullptr)
       ? attr_type.makeNullValue()
       : attr_type.makeValue(untyped_value, attr_type.maximumByteLength());
-  }
+  }*/
 
+  TupleIdSequence* getMatchesForPredicate(const ComparisonPredicate &predicate,
+                                          const TupleIdSequence *filter) const override;
+
+
+
+
+  std::size_t code_length_ = 31;
+
+ private:
+  // Find the tuples matching a simple comparison predicate.
+  virtual TupleIdSequence* getMatchesForComparison(const std::uint32_t comparison_literal_code,
+                                                   const ComparisonID comp,
+                                                   const TupleIdSequence *filter, const attribute_id key_id) const = 0;
+
+  //=============================================
   DISALLOW_COPY_AND_ASSIGN(BWTupleStorageSubBlock);
 };
 

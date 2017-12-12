@@ -33,6 +33,21 @@
 #include "utility/Macros.hpp"
 #include "utility/PtrVector.hpp"
 
+#include <cstddef>
+#include <cstdint>
+
+#include "expressions/predicate/PredicateCost.hpp"
+#include "storage/bitweaving/BitWeavingIndexSubBlock.hpp"
+#include "storage/StorageBlockInfo.hpp"
+#include "storage/StorageBlockLayout.pb.h"
+#include "storage/StorageConstants.hpp"
+#include "storage/SubBlockTypeRegistryMacros.hpp"
+#include "storage/TupleStorageSubBlock.hpp"
+#include "types/operations/comparisons/ComparisonID.hpp"
+#include "utility/Macros.hpp"
+
+#include "glog/logging.h"
+
 namespace quickstep {
 
 template <typename K, typename V> class PtrMap;
@@ -148,6 +163,8 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
   private:
 	using WordUnit = std::size_t;
   // Kan:TODO????
+
+
   bool insertTupleInBatch(const Tuple &tuple) override;
 
   tuple_id bulkInsertTuples(ValueAccessor *accessor) override;
@@ -202,6 +219,32 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
     tuple_id nulls_in_sort_column;
   };
 
+  // ============================================
+  // Find the tuples matching a simple comparison predicate.
+  TupleIdSequence* getMatchesForComparison(const std::uint32_t literal_code,
+                                           const ComparisonID comp,
+                                           const TupleIdSequence *filter, const attribute_id key_id) const override;
+
+  template <std::size_t CODE_LENGTH>
+  TupleIdSequence* getMatchesForComparisonHelper(const std::uint32_t literal_code,
+                                                 const ComparisonID comp,
+                                                 const TupleIdSequence *filter, const attribute_id key_id) const;
+  
+  template <std::size_t CODE_LENGTH, ComparisonID COMP>
+  TupleIdSequence* getMatchesForComparisonInstantiation(const std::uint32_t literal_code,
+                                                        const TupleIdSequence *filter, const attribute_id key_id) const;
+
+  /*std::size_t num_bits_per_code_;
+  std::size_t num_codes_per_word_;
+  std::size_t num_padding_bits_;
+  std::size_t num_words_per_segment_;
+  std::size_t num_codes_per_segment_;
+  std::size_t num_segments_;
+  std::size_t num_words_;
+  WordUnit *words_;
+*/
+
+  // =============================================
   bool hasSpaceToInsert(const tuple_id num_tuples) const {
     return (num_tuples <= max_tuples_ - header_->num_tuples);
   }

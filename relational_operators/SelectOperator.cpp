@@ -160,7 +160,7 @@ serialization::WorkOrder* SelectOperator::createWorkOrderProto(const partition_i
 
 void SelectWorkOrder::execute() {
   output_destination_->setInputPartitionId(partition_id_);
-
+  std::cout << "- executing a selectoperator" << std::endl;
   BlockReference block(
       storage_manager_->getBlock(input_block_id_, input_relation_, getPreferredNUMANodes()[0]));
 
@@ -169,12 +169,14 @@ void SelectWorkOrder::execute() {
   // work this ordering may even be adaptive.
   std::unique_ptr<TupleIdSequence> predicate_matches;
   if (predicate_ != nullptr) {
+    std::cout << "-- to match with predicate" << std::endl;
     predicate_matches.reset(
         block->getMatchesForPredicate(predicate_));
   }
 
   std::unique_ptr<TupleIdSequence> matches;
   if (lip_filter_adaptive_prober_ != nullptr) {
+    std::cout << "-- to filter " << std::endl;
     std::unique_ptr<ValueAccessor> accessor(
         block->getTupleStorageSubBlock().createValueAccessor(predicate_matches.get()));
     matches.reset(
@@ -184,10 +186,12 @@ void SelectWorkOrder::execute() {
   }
 
   if (simple_projection_) {
+    std::cout << "-- to simple projection " << std::endl;
     block->selectSimple(simple_selection_,
                         matches.get(),
                         output_destination_);
   } else {
+    std::cout << "-- to normal projection " << std::endl;
     block->select(*DCHECK_NOTNULL(selection_),
                   matches.get(),
                   output_destination_);

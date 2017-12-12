@@ -152,6 +152,7 @@ add_library(quickstep_storage_BasicColumnStoreValueAccessor
             ../empty_src.cpp
             BasicColumnStoreValueAccessor.hpp)
 add_library(quickstep_storage_BWColumnStoreTupleStorageSubBlock
+            BWTupleStorageSubBlock.cpp
             BWColumnStoreTupleStorageSubBlock.cpp
             BWColumnStoreTupleStorageSubBlock.hpp)
 add_library(quickstep_storage_BWColumnStoreValueAccessor

@@ -56,6 +56,28 @@
 
 #include "glog/logging.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+
+#include "catalog/CatalogTypedefs.hpp"
+#include "compression/CompressionDictionary.hpp"
+#include "compression/CompressionDictionaryBuilder.hpp"
+#include "expressions/predicate/ComparisonPredicate.hpp"
+#include "expressions/predicate/PredicateCost.hpp"
+#include "storage/bitweaving/BitWeavingIndexSubBlock.hpp"
+#include "storage/CompressedTupleStorageSubBlock.hpp"
+#include "storage/StorageBlockInfo.hpp"
+#include "storage/StorageBlockLayout.pb.h"
+#include "storage/StorageConstants.hpp"
+#include "storage/SubBlockTypeRegistry.hpp"
+#include "storage/TupleStorageSubBlock.hpp"
+#include "types/TypedValue.hpp"
+#include "types/operations/comparisons/ComparisonID.hpp"
+#include "utility/Macros.hpp"
+
+#include "glog/logging.h"
+
 using std::memcpy;
 using std::memmove;
 using std::size_t;
@@ -97,6 +119,261 @@ class SortColumnValueReference {
 }  // anonymous namespace
 
 
+TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparison(
+    const std::uint32_t literal_code,
+    const ComparisonID comp,
+    const TupleIdSequence *filter, const attribute_id key_id) const {
+  switch (code_length_) {
+    case 0:
+      LOG(FATAL) << "BitWeavingHIndexSubBlock does not support 0-bit codes.";
+    case 1:
+      return getMatchesForComparisonHelper<1>(literal_code, comp, filter, key_id);
+    case 2:
+      return getMatchesForComparisonHelper<2>(literal_code, comp, filter, key_id);
+    case 3:
+      return getMatchesForComparisonHelper<3>(literal_code, comp, filter, key_id);
+    case 4:
+      return getMatchesForComparisonHelper<4>(literal_code, comp, filter, key_id);
+    case 5:
+      return getMatchesForComparisonHelper<5>(literal_code, comp, filter, key_id);
+    case 6:
+      return getMatchesForComparisonHelper<6>(literal_code, comp, filter, key_id);
+    case 7:
+      return getMatchesForComparisonHelper<7>(literal_code, comp, filter, key_id);
+    case 8:
+      return getMatchesForComparisonHelper<8>(literal_code, comp, filter, key_id);
+    case 9:
+      return getMatchesForComparisonHelper<9>(literal_code, comp, filter, key_id);
+    case 10:
+      return getMatchesForComparisonHelper<10>(literal_code, comp, filter, key_id);
+    case 11:
+      return getMatchesForComparisonHelper<11>(literal_code, comp, filter, key_id);
+    case 12:
+      return getMatchesForComparisonHelper<12>(literal_code, comp, filter, key_id);
+    case 13:
+      return getMatchesForComparisonHelper<13>(literal_code, comp, filter, key_id);
+    case 14:
+      return getMatchesForComparisonHelper<14>(literal_code, comp, filter, key_id);
+    case 15:
+      return getMatchesForComparisonHelper<15>(literal_code, comp, filter, key_id);
+    case 16:
+      return getMatchesForComparisonHelper<16>(literal_code, comp, filter, key_id);
+    case 17:
+      return getMatchesForComparisonHelper<17>(literal_code, comp, filter, key_id);
+    case 18:
+      return getMatchesForComparisonHelper<18>(literal_code, comp, filter, key_id);
+    case 19:
+      return getMatchesForComparisonHelper<19>(literal_code, comp, filter, key_id);
+    case 20:
+      return getMatchesForComparisonHelper<20>(literal_code, comp, filter, key_id);
+    case 21:
+      return getMatchesForComparisonHelper<21>(literal_code, comp, filter, key_id);
+    case 22:
+      return getMatchesForComparisonHelper<22>(literal_code, comp, filter, key_id);
+    case 23:
+      return getMatchesForComparisonHelper<23>(literal_code, comp, filter, key_id);
+    case 24:
+      return getMatchesForComparisonHelper<24>(literal_code, comp, filter, key_id);
+    case 25:
+      return getMatchesForComparisonHelper<25>(literal_code, comp, filter, key_id);
+    case 26:
+      return getMatchesForComparisonHelper<26>(literal_code, comp, filter, key_id);
+    case 27:
+      return getMatchesForComparisonHelper<27>(literal_code, comp, filter, key_id);
+    case 28:
+      return getMatchesForComparisonHelper<28>(literal_code, comp, filter, key_id);
+    case 29:
+      return getMatchesForComparisonHelper<29>(literal_code, comp, filter, key_id);
+    case 30:
+      return getMatchesForComparisonHelper<30>(literal_code, comp, filter, key_id);
+    case 31:
+      return getMatchesForComparisonHelper<31>(literal_code, comp, filter, key_id);
+    default:
+      LOG(FATAL) << "BitWeavingHIndexSubBlock does not support codes "
+                 << "that are longer than 31-bit.";
+  }
+}
+
+template <std::size_t CODE_LENGTH>
+TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonHelper(
+    const std::uint32_t literal_code,
+    const ComparisonID comp,
+    const TupleIdSequence *filter, const attribute_id key_id) const {
+  switch (comp) {
+    case ComparisonID::kEqual:
+      return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kEqual>(
+          literal_code, filter, key_id);
+    case ComparisonID::kNotEqual:
+      return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kNotEqual>(
+          literal_code, filter, key_id);
+    case ComparisonID::kLess:
+      return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kLess>(
+          literal_code, filter, key_id);
+    case ComparisonID::kLessOrEqual:
+      return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kLessOrEqual>(
+          literal_code, filter, key_id);
+    case ComparisonID::kGreater:
+      return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kGreater>(
+          literal_code, filter, key_id);
+    case ComparisonID::kGreaterOrEqual:
+      return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kGreaterOrEqual>(
+          literal_code, filter, key_id);
+    default:
+      LOG(FATAL) << "Unknown comparator in BitWeavingHIndexSubBlock";
+  }
+}
+
+template <std::size_t CODE_LENGTH, ComparisonID COMP>
+TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInstantiation(
+    const std::uint32_t literal_code,
+    const TupleIdSequence *filter, const attribute_id key_id) const {
+  DEBUG_ASSERT(literal_code < (1ULL << CODE_LENGTH));
+
+  constexpr std::size_t kNumBitsPerWord = sizeof(WordUnit) << 3;
+  // We will break down the loop over all bit positions into several
+  // fixed-length small loops called groups, making it easy to
+  // unroll these loops.
+  // Based on experimental results, it is effitient to set the group
+  // size to be 7.
+  constexpr std::size_t kNumWordsPerGroup = 7;
+  constexpr std::size_t kNumFilledGroups = (CODE_LENGTH + 1) / kNumWordsPerGroup;
+  constexpr std::size_t kNumWordsInUnfilledGroup = (CODE_LENGTH + 1)
+      - kNumWordsPerGroup * kNumFilledGroups;
+
+  // Generate masks
+  // k = number of bits per code
+  // base_mask: 0^k 1 0^k 1 ... 0^k 1
+  // predicate_mask: 0 code 0 code ... 0 code
+  // complement_mask: 0 1^k 0 1^k 0 ... 0 1^k
+  // result_mask: 1 0^k 1 0^k 1 ... 1 0^k
+  WordUnit base_mask = 0;
+/*  for (std::size_t i = 0; i < num_codes_per_word_; ++i) {
+    base_mask = (base_mask << num_bits_per_code_) | static_cast<WordUnit>(1);
+  }
+  WordUnit complement_mask = base_mask * static_cast<WordUnit>((1ULL << CODE_LENGTH) - 1);
+  WordUnit result_mask = base_mask << CODE_LENGTH;
+
+  WordUnit less_than_mask = base_mask * literal_code;
+  WordUnit greater_than_mask = (base_mask * literal_code) ^ complement_mask;
+  WordUnit equal_mask = base_mask
+      * (~literal_code & (static_cast<WordUnit>(-1) >> (kNumBitsPerWord - CODE_LENGTH)));
+  WordUnit inequal_mask = base_mask * literal_code;
+
+  std::size_t num_tuples = getMaxTupleID() + 1;
+  //std::size_t num_tuples = tuple_store_.getMaxTupleID() + 1;
+  TupleIdSequence *sequence = new TupleIdSequence(num_tuples);
+
+  WordUnit word_bitvector, output_bitvector = 0;
+  std::int64_t output_offset = 0;
+  std::size_t output_word_id = 0;
+  for (std::size_t segment_offset = 0;
+       segment_offset < num_words_;
+       segment_offset += num_words_per_segment_) {
+    WordUnit segment_bitvector = 0;
+    std::size_t word_id = 0;
+
+    // A loop over all words inside a segment.
+    // We break down the loop over all bit positions into several
+    // fixed-length small loops.
+    for (std::size_t bit_group_id = 0; bit_group_id < kNumFilledGroups; ++bit_group_id) {
+      // For more details about these bitwise operators, see the BitWeaving paper:
+      // http://quickstep.cs.wisc.edu/pubs/bitweaving-sigmod.pdf
+      for (std::size_t bit = 0; bit < kNumWordsPerGroup; ++bit) {
+        switch (COMP) {
+          case ComparisonID::kEqual:
+            word_bitvector = ((words_[segment_offset + word_id] ^ equal_mask)
+                + base_mask) & result_mask;
+            break;
+          case ComparisonID::kNotEqual:
+            word_bitvector = ((words_[segment_offset + word_id] ^ inequal_mask)
+                + complement_mask) & result_mask;
+            break;
+          case ComparisonID::kGreater:
+            word_bitvector = (words_[segment_offset + word_id] + greater_than_mask)
+                & result_mask;
+            break;
+          case ComparisonID::kLess:
+            word_bitvector = (less_than_mask + (words_[segment_offset + word_id]
+                ^ complement_mask)) & result_mask;
+            break;
+          case ComparisonID::kGreaterOrEqual:
+            word_bitvector = ~(less_than_mask + (words_[segment_offset + word_id]
+                ^ complement_mask)) & result_mask;
+            break;
+          case ComparisonID::kLessOrEqual:
+            word_bitvector = ~(words_[segment_offset + word_id] + greater_than_mask)
+                & result_mask;
+            break;
+          default:
+            LOG(FATAL) << "Unknown comparator in BitWeavingHIndexSubBlock";
+        }
+        segment_bitvector |= word_bitvector >> word_id++;
+      }
+    }
+
+    // A loop on the rest of bit positions
+    // For more details about these bitwise operators, see the BitWeaving paper:
+    // http://quickstep.cs.wisc.edu/pubs/bitweaving-sigmod.pdf
+    for (std::size_t bit = 0; bit < kNumWordsInUnfilledGroup; ++bit) {
+      switch (COMP) {
+        case ComparisonID::kEqual:
+          word_bitvector = ((words_[segment_offset + word_id] ^ equal_mask)
+              + base_mask) & result_mask;
+          break;
+        case ComparisonID::kNotEqual:
+          word_bitvector = ((words_[segment_offset + word_id] ^ inequal_mask)
+              + complement_mask) & result_mask;
+          break;
+        case ComparisonID::kGreater:
+          word_bitvector = (words_[segment_offset + word_id] + greater_than_mask)
+              & result_mask;
+          break;
+        case ComparisonID::kLess:
+          word_bitvector = (less_than_mask + (words_[segment_offset + word_id]
+              ^ complement_mask)) & result_mask;
+          break;
+        case ComparisonID::kGreaterOrEqual:
+          word_bitvector = ~(less_than_mask + (words_[segment_offset + word_id]
+              ^ complement_mask)) & result_mask;
+          break;
+        case ComparisonID::kLessOrEqual:
+          word_bitvector = ~(words_[segment_offset + word_id] + greater_than_mask)
+                  & result_mask;
+          break;
+        default:
+          LOG(FATAL) << "Unknown comparator in BitWeavingHIndexSubBlock";
+      }
+      segment_bitvector |= word_bitvector >> word_id++;
+    }
+
+    output_bitvector |= (segment_bitvector << num_padding_bits_) >> output_offset;
+    output_offset += num_codes_per_segment_;
+
+    if (static_cast<std::uint64_t>(output_offset) >= (sizeof(WordUnit) << 3)) {
+      WordUnit filter_mask = filter ? filter->getWord(output_word_id) : static_cast<WordUnit>(-1);
+      sequence->setWord(output_word_id, output_bitvector & filter_mask);
+
+      output_offset -= kNumBitsPerWord;
+      std::size_t output_shift = kNumBitsPerWord - output_offset;
+      output_bitvector = segment_bitvector << output_shift;
+      // Clear up outputBitvector if outputOffset = kNumBitsPerWord
+      output_bitvector &= static_cast<WordUnit>(0) - (output_shift != kNumBitsPerWord);
+      ++output_word_id;
+    }
+  }
+
+  output_offset -= num_words_ * num_codes_per_word_ - num_tuples;
+  if (output_offset > 0) {
+    WordUnit filter_mask = filter ? filter->getWord(output_word_id) : static_cast<WordUnit>(-1);
+    sequence->setWord(output_word_id, output_bitvector & filter_mask);
+  }
+
+  return sequence;
+*/
+}
+
+
+// =============================================
 BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
     const CatalogRelationSchema &relation,
     const TupleStorageSubBlockDescription &description,
