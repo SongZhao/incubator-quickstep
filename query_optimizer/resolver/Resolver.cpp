@@ -718,7 +718,11 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
     description->set_sub_block_type(
         quickstep::TupleStorageSubBlockDescription::BW_COLUMN_STORE);
     block_allows_sort = true;
-  } else {
+  } else if (type_string.compare("bw_v_columnstore") == 0) {
+    description->set_sub_block_type(
+        quickstep::TupleStorageSubBlockDescription::BW_V_COLUMN_STORE);
+    block_allows_sort = true;
+  }else {
     THROW_SQL_ERROR_AT(type_parse_string) << "Unrecognized storage type.";
   }
 
@@ -726,11 +730,14 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
   const ParseString *sort_parse_string = block_properties->getSort();
   if (block_allows_sort) {
     if (sort_parse_string == nullptr) {
-      if (description->sub_block_type() != TupleStorageSubBlockDescription::BASIC_COLUMN_STORE && description->sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE ) {
+      if (description->sub_block_type() != TupleStorageSubBlockDescription::BASIC_COLUMN_STORE && 
+          description->sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE &&
+          description->sub_block_type() != TupleStorageSubBlockDescription::BW_V_COLUMN_STORE) {
         std::cout << "Get HERE! " << std::endl;
         THROW_SQL_ERROR_AT(type_parse_string)
             << "The SORT property must be specified as an attribute name.";
       }
+
     } else {
       // Lookup the name and map to a column id.
       const attribute_id sort_id = GetAttributeIdFromName(create_table_statement.attribute_definition_list(),
@@ -747,6 +754,10 @@ StorageBlockLayoutDescription* Resolver::resolveBlockProperties(
             TupleStorageSubBlockDescription::BW_COLUMN_STORE) {
           description->SetExtension(
               BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id, sort_id);
+        } else if (description->sub_block_type() ==
+            TupleStorageSubBlockDescription::BW_V_COLUMN_STORE) {
+          description->SetExtension(
+              BWVColumnStoreTupleStorageSubBlockDescription::sort_attribute_id, sort_id);
         } else if (description->sub_block_type() ==
             TupleStorageSubBlockDescription::COMPRESSED_COLUMN_STORE) {
           description->SetExtension(

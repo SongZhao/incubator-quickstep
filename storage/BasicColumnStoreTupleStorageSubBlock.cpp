@@ -137,7 +137,7 @@ BasicColumnStoreTupleStorageSubBlock::BasicColumnStoreTupleStorageSubBlock(
   // BitVector's storage requirements "round up" to sizeof(size_t), so now redo
   // the calculation accurately.
   std::size_t bitmap_required_bytes = BitVector<false>::BytesNeeded(max_tuples_);
-  max_tuples_ = (sub_block_memory_size_
+  max_tuples_ = (sub_block_memory_size_bitmap_required_bytes
                      - sizeof(BasicColumnStoreHeader)
                      - (relation_.numNullableAttributes() * bitmap_required_bytes))
                 / relation_.getFixedByteLength();

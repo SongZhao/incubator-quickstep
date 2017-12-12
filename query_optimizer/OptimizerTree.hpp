@@ -258,6 +258,16 @@ OptimizerProtoRepresentation<TreeNodeType>* getOptimizerRepresentationForProto(
       }
       break;
     }
+    case TupleStorageSubBlockDescription::BW_V_COLUMN_STORE: {
+      node->addProperty("blocktype", "bw_v_columnstore");
+      if (storage_block_description.HasExtension(
+              quickstep::BWVColumnStoreTupleStorageSubBlockDescription::sort_attribute_id)) {
+        node->addProperty("sort",
+            storage_block_description.GetExtension(
+                quickstep::BWVColumnStoreTupleStorageSubBlockDescription::sort_attribute_id));
+      }
+      break;
+    }
     case TupleStorageSubBlockDescription::COMPRESSED_COLUMN_STORE: {
       node->addProperty("blocktype", "compressed_columnstore");
       node->addProperty("sort",

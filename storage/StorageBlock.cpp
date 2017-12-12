@@ -32,6 +32,7 @@
 #include "expressions/scalar/Scalar.hpp"
 #include "storage/BasicColumnStoreTupleStorageSubBlock.hpp"
 #include "storage/BWColumnStoreTupleStorageSubBlock.hpp"
+#include "storage/BWVColumnStoreTupleStorageSubBlock.hpp"
 #include "storage/BloomFilterIndexSubBlock.hpp"
 #include "storage/CSBTreeIndexSubBlock.hpp"
 #include "storage/CompressedColumnStoreTupleStorageSubBlock.hpp"
@@ -806,6 +807,12 @@ TupleStorageSubBlock* StorageBlock::CreateTupleStorageSubBlock(
                                                       sub_block_memory_size);
     case TupleStorageSubBlockDescription::BW_COLUMN_STORE:
       return new BWColumnStoreTupleStorageSubBlock(relation,
+                                                   description,
+                                                   new_block,
+                                                   sub_block_memory,
+                                                   sub_block_memory_size);
+    case TupleStorageSubBlockDescription::BW_V_COLUMN_STORE:
+      return new BWVColumnStoreTupleStorageSubBlock(relation,
                                                    description,
                                                    new_block,
                                                    sub_block_memory,

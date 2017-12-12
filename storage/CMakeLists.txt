@@ -157,6 +157,12 @@ add_library(quickstep_storage_BWColumnStoreTupleStorageSubBlock
 add_library(quickstep_storage_BWColumnStoreValueAccessor
             ../empty_src.cpp
             BWColumnStoreValueAccessor.hpp)
+            add_library(quickstep_storage_BWVColumnStoreTupleStorageSubBlock
+            BWVColumnStoreTupleStorageSubBlock.cpp
+            BWVColumnStoreTupleStorageSubBlock.hpp)
+add_library(quickstep_storage_BWVColumnStoreValueAccessor
+            ../empty_src.cpp
+            BWVColumnStoreValueAccessor.hpp)
 add_library(quickstep_storage_BloomFilterIndexSubBlock BloomFilterIndexSubBlock.cpp BloomFilterIndexSubBlock.hpp)
 # CMAKE_VALIDATE_IGNORE_BEGIN
 if(QUICKSTEP_HAVE_BITWEAVING)
@@ -325,6 +331,7 @@ target_link_libraries(quickstep_storage_BasicColumnStoreTupleStorageSubBlock
                       quickstep_expressions_scalar_Scalar
                       quickstep_storage_BasicColumnStoreValueAccessor
                       quickstep_storage_BWColumnStoreValueAccessor
+                      quickstep_storage_BWVColumnStoreValueAccessor
                       quickstep_storage_ColumnStoreUtil
                       quickstep_storage_StorageBlockInfo
                       quickstep_storage_StorageBlockLayout_proto
@@ -338,6 +345,7 @@ target_link_libraries(quickstep_storage_BasicColumnStoreTupleStorageSubBlock
                       quickstep_types_Type
                       quickstep_types_TypedValue
                       quickstep_storage_BWColumnStoreTupleStorageSubBlock
+                      quickstep_storage_BWVColumnStoreTupleStorageSubBlock
                       quickstep_types_containers_Tuple
                       quickstep_types_operations_comparisons_Comparison
                       quickstep_types_operations_comparisons_ComparisonFactory
@@ -350,6 +358,7 @@ target_link_libraries(quickstep_storage_BasicColumnStoreTupleStorageSubBlock
                       quickstep_utility_ScopedBuffer)
 target_link_libraries(quickstep_storage_BasicColumnStoreValueAccessor
                       quickstep_storage_BWColumnStoreValueAccessor
+                      quickstep_storage_BWVColumnStoreValueAccessor
                       quickstep_catalog_CatalogRelationSchema
                       quickstep_catalog_CatalogTypedefs
                       quickstep_storage_StorageBlockInfo
@@ -955,6 +964,7 @@ target_link_libraries(quickstep_storage_StorageBlock
                       quickstep_expressions_scalar_Scalar
                       quickstep_storage_BasicColumnStoreTupleStorageSubBlock
                       quickstep_storage_BWColumnStoreTupleStorageSubBlock
+                      quickstep_storage_BWVColumnStoreTupleStorageSubBlock
                       quickstep_storage_BloomFilterIndexSubBlock
                       quickstep_storage_CSBTreeIndexSubBlock
                       quickstep_storage_CompressedColumnStoreTupleStorageSubBlock
@@ -1110,6 +1120,7 @@ target_link_libraries(quickstep_storage_ValueAccessorUtil
                       glog
                       quickstep_storage_BasicColumnStoreValueAccessor
                       quickstep_storage_BWColumnStoreValueAccessor
+                      quickstep_storage_BWVColumnStoreValueAccessor
                       quickstep_storage_CompressedColumnStoreValueAccessor
                       quickstep_storage_CompressedPackedRowStoreValueAccessor
                       quickstep_storage_SplitRowStoreValueAccessor
@@ -1155,6 +1166,8 @@ target_link_libraries(quickstep_storage
                       quickstep_storage_BasicColumnStoreValueAccessor
                       quickstep_storage_BWColumnStoreTupleStorageSubBlock
                       quickstep_storage_BWColumnStoreValueAccessor
+                      quickstep_storage_BWVColumnStoreTupleStorageSubBlock
+                      quickstep_storage_BWVColumnStoreValueAccessor
                       quickstep_storage_BloomFilterIndexSubBlock
                       quickstep_storage_CSBTreeIndexSubBlock
                       quickstep_storage_CollisionFreeVectorTable
