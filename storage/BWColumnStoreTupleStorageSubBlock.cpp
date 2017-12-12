@@ -245,10 +245,12 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
   // base_mask: 0^k 1 0^k 1 ... 0^k 1
   // predicate_mask: 0 code 0 code ... 0 code
   // complement_mask: 0 1^k 0 1^k 0 ... 0 1^k
-  // result_mask: 1 0^k 1 0^k 1 ... 1 0^k
+  // result_mask: 1 0^k 1 0^k 1 ... 1 0^k   
+  //TODO assign num_bits_per_code
+  //
   WordUnit base_mask = 0;
-/*  for (std::size_t i = 0; i < num_codes_per_word_; ++i) {
-    base_mask = (base_mask << num_bits_per_code_) | static_cast<WordUnit>(1);
+  for (std::size_t i = 0; i < num_codes_per_word_[key_id]; ++i) {
+    base_mask = (base_mask << num_bits_per_code_[key_id]) | static_cast<WordUnit>(1);
   }
   WordUnit complement_mask = base_mask * static_cast<WordUnit>((1ULL << CODE_LENGTH) - 1);
   WordUnit result_mask = base_mask << CODE_LENGTH;
@@ -259,7 +261,7 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
       * (~literal_code & (static_cast<WordUnit>(-1) >> (kNumBitsPerWord - CODE_LENGTH)));
   WordUnit inequal_mask = base_mask * literal_code;
 
-  std::size_t num_tuples = getMaxTupleID() + 1;
+  std::size_t num_tuples = header->num_tuples;
   //std::size_t num_tuples = tuple_store_.getMaxTupleID() + 1;
   TupleIdSequence *sequence = new TupleIdSequence(num_tuples);
 
@@ -271,7 +273,7 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
        segment_offset += num_words_per_segment_) {
     WordUnit segment_bitvector = 0;
     std::size_t word_id = 0;
-
+    // TODO assign word_as attribute's addr
     // A loop over all words inside a segment.
     // We break down the loop over all bit positions into several
     // fixed-length small loops.
@@ -369,7 +371,6 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
   }
 
   return sequence;
-*/
 }
 
 
@@ -414,19 +415,20 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   for (const CatalogAttribute &attr : relation_) { 
         num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
      	std::cout << "current attr is " << attr.getID() << std::endl;
-        std::cout << "attr length is " << attr.getType().maximumByteLength()<<3 + 1 << std::endl; 
+        std::cout << "attr length is " << attr.getType().maximumByteLength()*8 + 1 << std::endl;
+        num_bits_per_code_[attr.getID()] = attr.getType().maximumByteLength()*8 + 1; 
 	if(num_codes_per_word_[attr.getID()] == 0)
 	{
 		num_words_per_code_[attr.getID()] = ((attr.getType().maximumByteLength()<<3)+1)/(sizeof(WordUnit)<<3) + 1;
-     		num_codes_per_segment_[attr.getID()] =  (attr.getType().maximumByteLength()<<3); //some sort of hard coding for now
+     		num_codes_per_segment_[attr.getID()] =  (attr.getType().maximumByteLength()*8); //some sort of hard coding for now
      		num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) * num_words_per_code_[attr.getID()] - (attr.getType().maximumByteLength()<<3);   
 		size += num_words_per_code_[attr.getID()];	
 	}
 	else
 	{
                 num_words_per_code_[attr.getID()] = 1;
-                num_codes_per_segment_[attr.getID()] = num_codes_per_word_[attr.getID()] *(attr.getType().maximumByteLength()<<3); 
-                num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * (attr.getType().maximumByteLength()<<3);   
+                num_codes_per_segment_[attr.getID()] = num_codes_per_word_[attr.getID()] *(attr.getType().maximumByteLength()*8); 
+                num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * (attr.getType().maximumByteLength()*8);   
 		size += 1;
 	}
   std::cout << "#word/code for attr " << attr.getID() << " is " << num_words_per_code_[attr.getID()] << std::endl;
@@ -444,7 +446,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   // Determine the amount of tuples this sub-block can hold. Compute on the
   // order of bits to account for null bitmap storage.
   max_tuples_ = ((sub_block_memory_size_ - sizeof(BWColumnStoreHeader)) << 3)
-                / ((size << 3) + relation_.numNullableAttributes());
+                / ((size * 8) + relation_.numNullableAttributes());
   if (max_tuples_ == 0) {
     throw BlockMemoryTooSmall("BWColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
   }
@@ -536,18 +538,14 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 */
 
 	
-	  std::cout << "here 1" <<std::endl;
 
 	  DEBUG_ASSERT(memory_location
 		       <= static_cast<const char*>(sub_block_memory_) + sub_block_memory_size_);
-	  std::cout << "here 2" <<std::endl;
 
 	  if (new_block) {
 	    header_->num_tuples = 0;
 	    header_->nulls_in_sort_column = 0;
-	  std::cout << "here 3" <<std::endl;
 	  }
-	  std::cout << "here 4" <<std::endl;
 	}
 
 	bool BWColumnStoreTupleStorageSubBlock::DescriptionIsValid(
