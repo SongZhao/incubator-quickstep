@@ -403,11 +403,48 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   if (sub_block_memory_size < sizeof(BWColumnStoreHeader)) {
     throw BlockMemoryTooSmall("BWColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
   }
+  //col and row for column_stripes
+  num_codes_per_word_.resize(relation_.getMaxAttributeId() + 1);
+  num_padding_bits_.resize(relation_.getMaxAttributeId() + 1); 
+  num_codes_per_segment_.resize(relation_.getMaxAttributeId() + 1);
+  num_words_per_segment_.resize(relation_.getMaxAttributeId() + 1);
+  num_words_per_code_.resize(relation_.getMaxAttributeId() + 1);
+  int size = 0;
+  std::cout << "wordunit is " << (sizeof(WordUnit)<<3) << std::endl; 
+  for (const CatalogAttribute &attr : relation_) { 
+        num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
+     	std::cout << "current attr is " << attr.getID() << std::endl;
+        std::cout << "attr length is " << attr.getType().maximumByteLength()<<3 + 1 << std::endl; 
+	if(num_codes_per_word_[attr.getID()] == 0)
+	{
+		num_words_per_code_[attr.getID()] = ((attr.getType().maximumByteLength()<<3)+1)/(sizeof(WordUnit)<<3) + 1;
+     		num_codes_per_segment_[attr.getID()] =  (attr.getType().maximumByteLength()<<3); //some sort of hard coding for now
+     		num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) * num_words_per_code_[attr.getID()] - (attr.getType().maximumByteLength()<<3);   
+		size += num_words_per_code_[attr.getID()];	
+	}
+	else
+	{
+                num_words_per_code_[attr.getID()] = 1;
+                num_codes_per_segment_[attr.getID()] = num_codes_per_word_[attr.getID()] *(attr.getType().maximumByteLength()<<3); 
+                num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * (attr.getType().maximumByteLength()<<3);   
+		size += 1;
+	}
+  std::cout << "#word/code for attr " << attr.getID() << " is " << num_words_per_code_[attr.getID()] << std::endl;
+  std::cout << "#codes/word for attr " << attr.getID() << " is " << num_codes_per_word_[attr.getID()] << std::endl;
+  std::cout << "#codes/segment for attr " << attr.getID() << " is " << num_codes_per_segment_[attr.getID()] << std::endl;
+  std::cout << "#of padding bits" << num_padding_bits_[attr.getID()] << std::endl;	 
+  num_words_per_segment_[attr.getID()] = ((attr.getType().maximumByteLength() << 3) * num_words_per_code_[attr.getID()]); 
+  std::cout << "#word/segment for attr " << attr.getID() << " is " << num_words_per_segment_[attr.getID()] << std::endl;
+	 // row_array_[attr.getID()] = max_tuples_ / col_array_[attr.getID()];
+  }
+	  std::cout << "this loop 2" << num_codes_per_word_.size() << std::endl;
+  std::cout << "total size of a single tuple is " << size << std::endl;
+
 
   // Determine the amount of tuples this sub-block can hold. Compute on the
   // order of bits to account for null bitmap storage.
   max_tuples_ = ((sub_block_memory_size_ - sizeof(BWColumnStoreHeader)) << 3)
-                / ((relation_.getFixedByteLength() << 3) + relation_.numNullableAttributes());
+                / ((size << 3) + relation_.numNullableAttributes());
   if (max_tuples_ == 0) {
     throw BlockMemoryTooSmall("BWColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
   }
@@ -459,52 +496,58 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
     
     column_stripes_[attr.getID()] = memory_location;
     memory_location += max_tuples_ * attr.getType().maximumByteLength();
-  
+	  std::cout << "this loop1" <<std::endl;
+  }/*
   //col and row for column_stripes
-  num_codes_per_word_.resize(relation_.getMaxAttributeId());
-  rol_array_.resize(relation_.getMaxAttributeId()); //currently unused
-  num_padding_bits_.resize(relation_.getMaxAttributeId()); 
-  num_codes_per_segment_.resize(relation_.getMaxAttributeId());
-  num_words_per_segment_.resize(relation_.getMaxAttributeId());
-  num_words_per_code_.resize(relation_.getMaxAttributeId());
+  num_codes_per_word_.resize(relation_.getMaxAttributeId() + 1);
+  num_padding_bits_.resize(relation_.getMaxAttributeId() + 1); 
+  num_codes_per_segment_.resize(relation_.getMaxAttributeId() + 1);
+  num_words_per_segment_.resize(relation_.getMaxAttributeId() + 1);
+  num_words_per_code_.resize(relation_.getMaxAttributeId() + 1);
+
   std::cout << "wordunit is " << (sizeof(WordUnit)<<3) << std::endl; 
-  std::cout << "attr length is " << attr.getType().maximumByteLength()<<3 + 1 << std::endl; 
-     num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
   for (const CatalogAttribute &attr : relation_) { 
-     if(num_codes_per_word_[attr.getID()] == 0)
+        num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
+     	std::cout << "current attr is " << attr.getID() << std::endl;
+        std::cout << "attr length is " << attr.getType().maximumByteLength()<<3 + 1 << std::endl; 
+	if(num_codes_per_word_[attr.getID()] == 0)
 	{
 		num_words_per_code_[attr.getID()] = ((attr.getType().maximumByteLength()<<3)+1)/(sizeof(WordUnit)<<3) + 1;
-     		num_codes_per_segment_[attr.getID()] =  ((attr.getType().maximumByteLength()<<3)+1); //some sort of hard coding for now
-     		num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) * num_words_per_code_[attr.getID()] - attr.getType().maximumByteLength();   
+     		num_codes_per_segment_[attr.getID()] =  (attr.getType().maximumByteLength()<<3); //some sort of hard coding for now
+     		num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) * num_words_per_code_[attr.getID()] - (attr.getType().maximumByteLength()<<3);   
 		
 	}
 	else
 	{
-     num_words_per_code_[attr.getID()] = 1;
-     num_codes_per_segment_[attr.getID()] = num_codes_per_word_[attr.getID()] * ((attr.getType().maximumByteLength()<<3)+1); 
-     num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * attr.getType().maximumByteLength();   
+                num_words_per_code_[attr.getID()] = 1;
+                num_codes_per_segment_[attr.getID()] = num_codes_per_word_[attr.getID()] *(attr.getType().maximumByteLength()<<3); 
+                num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * (attr.getType().maximumByteLength()<<3);   
 	}
-     std::cout << "#word/code for attr " << attr.getID() << " is " << num_words_per_code_[attr.getID()] << std::endl;
-
-     std::cout << "#codes/word for attr " << attr.getID() << " is " << num_codes_per_word_[attr.getID()] << std::endl;
-     std::cout << "#codes/segment for attr " << attr.getID() << " is " << num_codes_per_segment_[attr.getID()] << std::endl;
-	 
-    num_words_per_segment_[attr.getID()] = ((attr.getType().maximumByteLength() << 3) * num_words_per_code_[attr.getID()]); 
-     std::cout << "#word/segment for attr " << attr.getID() << " is " << num_words_per_segment_[attr.getID()] << std::endl;
+  std::cout << "#word/code for attr " << attr.getID() << " is " << num_words_per_code_[attr.getID()] << std::endl;
+  std::cout << "#codes/word for attr " << attr.getID() << " is " << num_codes_per_word_[attr.getID()] << std::endl;
+  std::cout << "#codes/segment for attr " << attr.getID() << " is " << num_codes_per_segment_[attr.getID()] << std::endl;
+  std::cout << "#of padding bits" << num_padding_bits_[attr.getID()] << std::endl;	 
+  num_words_per_segment_[attr.getID()] = ((attr.getType().maximumByteLength() << 3) * num_words_per_code_[attr.getID()]); 
+  std::cout << "#word/segment for attr " << attr.getID() << " is " << num_words_per_segment_[attr.getID()] << std::endl;
 	 // row_array_[attr.getID()] = max_tuples_ / col_array_[attr.getID()];
-	  }
+  }
+	  std::cout << "this loop 2" << num_codes_per_word_.size() << std::endl;
 
+*/
 
-
-	}
+	
+	  std::cout << "here 1" <<std::endl;
 
 	  DEBUG_ASSERT(memory_location
 		       <= static_cast<const char*>(sub_block_memory_) + sub_block_memory_size_);
+	  std::cout << "here 2" <<std::endl;
 
 	  if (new_block) {
 	    header_->num_tuples = 0;
 	    header_->nulls_in_sort_column = 0;
+	  std::cout << "here 3" <<std::endl;
 	  }
+	  std::cout << "here 4" <<std::endl;
 	}
 
 	bool BWColumnStoreTupleStorageSubBlock::DescriptionIsValid(
@@ -604,7 +647,7 @@ bool BWColumnStoreTupleStorageSubBlock::insertTupleInBatch(const Tuple &tuple) {
 
 tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *accessor) {
   const tuple_id original_num_tuples = header_->num_tuples;
-  std::cout << "Get in bulkInsertTuples!" << std::endl;
+  std::cout << "Get in bulkInsertTuples!" << "Get Here11!" << std::endl;
   InvokeOnAnyValueAccessor(
       accessor,
       [&](auto *accessor) -> void {  // NOLINT(build/c++11)
@@ -681,7 +724,7 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
           ++accessor_attr_id;
         }
 	//print table
-	 /*
+	 
   	std::cout << "max # tuple " << max_tuples_ << std::endl;
 	for(int  i=0; i < header_->num_tuples; i++)
 	{
@@ -716,12 +759,12 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
 			+ nth_segment * num_words_per_segment_[attr_it->getID()]) << std::endl;
 		
 		}
-	}*/
+	}
         ++(header_->num_tuples);
       }
     }
   });
-
+  
   const tuple_id num_inserted = header_->num_tuples - original_num_tuples;
   sorted_ = sorted_ && (num_inserted == 0);
   return num_inserted;
