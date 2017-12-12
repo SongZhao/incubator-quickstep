@@ -440,6 +440,7 @@ TypedValue BWColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
 
 ValueAccessor* BWColumnStoreTupleStorageSubBlock::createValueAccessor(
     const TupleIdSequence *sequence) const {
+  std::cout << "---- create a value accessor for BWsubblock" << std::endl;
   BWColumnStoreValueAccessor *base_accessor
       = new BWColumnStoreValueAccessor(relation_,
                                           relation_,
@@ -597,13 +598,13 @@ predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationC
       return predicate_cost::kBinarySearch;
     }
   }
-  return predicate_cost::kColumnScan;
+  return predicate_cost::kBitWeavingHScan;
 }
 
 TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForPredicate(
     const ComparisonPredicate &predicate,
     const TupleIdSequence *filter) const {
-  std::cout << "Get in getMatchesForPredicate" << std::endl;
+  std::cout << "------ Get in getMatchesForPredicate of BW" << std::endl;
 
   DCHECK(sort_specified_) <<
       "Called BWColumnStoreTupleStorageSubBlock::getMatchesForPredicate() "

@@ -111,6 +111,7 @@ class BWColumnStoreValueAccessorHelper {
   template <bool check_null>
   inline const void* getAttributeValue(const tuple_id tuple,
                                        const attribute_id attr) const {
+    std::cout << "----- to get an attribute value with type through BWColumnStoreValueAccessorHelper" << std::endl;
     DEBUG_ASSERT(tuple < num_tuples_);
     DEBUG_ASSERT(relation_.hasAttributeWithId(attr));
     if (check_null
@@ -127,7 +128,7 @@ class BWColumnStoreValueAccessorHelper {
   inline TypedValue getAttributeValueTyped(const tuple_id tuple,
                                            const attribute_id attr) const {
     //Kan: test
-    std::cout << "Try to get a value with type through BWColumnStoreValueAccessor" << std::endl;
+    std::cout << "----- to get an attributeValueTyped with type through BWColumnStoreValueAccessorHelper" << std::endl;
 
     const Type &attr_type = relation_.getAttributeById(attr)->getType();
     const void *untyped_value = getAttributeValue<true>(tuple, attr);

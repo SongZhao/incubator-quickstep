@@ -1063,7 +1063,7 @@ bool StorageBlock::rebuildIndexes(bool short_circuit) {
 TupleIdSequence* StorageBlock::getMatchesForPredicate(const Predicate *predicate,
                                                       const TupleIdSequence *filter) const {
   
-  std::cout << "==== trying to getMatchesFor a predicate" << std::endl;
+  std::cout << "--- storageBlock: getMatchesForPredicate" << std::endl;
   if (predicate == nullptr) {
     TupleIdSequence *matches = tuple_store_->getExistenceMap();
     if (filter != nullptr) {
