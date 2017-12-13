@@ -17,7 +17,7 @@
  * under the License.
  **/
 
-#include "storage/BWColumnStoreTupleStorageSubBlock.hpp"
+#include "storage/BWVColumnStoreTupleStorageSubBlock.hpp"
 
 #include <cstddef>
 #include <cstring>
@@ -32,7 +32,7 @@
 #include "expressions/predicate/Predicate.hpp"
 #include "expressions/predicate/PredicateCost.hpp"
 #include "expressions/scalar/Scalar.hpp"
-#include "storage/BWColumnStoreValueAccessor.hpp"
+#include "storage/BWVColumnStoreValueAccessor.hpp"
 #include "storage/ColumnStoreUtil.hpp"
 #include "storage/StorageBlockInfo.hpp"
 #include "storage/StorageBlockLayout.pb.h"
@@ -88,7 +88,7 @@ using quickstep::column_store_util::SortColumnPredicateEvaluator;
 
 namespace quickstep {
 
-QUICKSTEP_REGISTER_TUPLE_STORE(BWColumnStoreTupleStorageSubBlock, BW_COLUMN_STORE);
+QUICKSTEP_REGISTER_TUPLE_STORE(BWVColumnStoreTupleStorageSubBlock, BWV_COLUMN_STORE);
 
 // Hide this helper in an anonymous namespace:
 namespace {
@@ -119,11 +119,10 @@ class SortColumnValueReference {
 }  // anonymous namespace
 
 
-TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparison(
+TupleIdSequence* BWVColumnStoreTupleStorageSubBlock::getMatchesForComparison(
     const std::uint32_t literal_code,
     const ComparisonID comp,
     const TupleIdSequence *filter, const attribute_id key_id) const {
-  std::cout << "------ get in getMatchesForComparison" << std::endl;
   switch (code_length_) {
     case 0:
       LOG(FATAL) << "BitWeavingHIndexSubBlock does not support 0-bit codes.";
@@ -196,12 +195,10 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparison(
 }
 
 template <std::size_t CODE_LENGTH>
-TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonHelper(
+TupleIdSequence* BWVColumnStoreTupleStorageSubBlock::getMatchesForComparisonHelper(
     const std::uint32_t literal_code,
     const ComparisonID comp,
     const TupleIdSequence *filter, const attribute_id key_id) const {
-  
-  std::cout << "------ get in getMatchesForComparisonHelper" << std::endl;
   switch (comp) {
     case ComparisonID::kEqual:
       return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kEqual>(
@@ -227,11 +224,11 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonHelpe
 }
 
 template <std::size_t CODE_LENGTH, ComparisonID COMP>
-TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInstantiation(
+TupleIdSequence* BWVColumnStoreTupleStorageSubBlock::getMatchesForComparisonInstantiation(
     const std::uint32_t literal_code,
     const TupleIdSequence *filter, const attribute_id key_id) const {
   DEBUG_ASSERT(literal_code < (1ULL << CODE_LENGTH));
-  std::cout << "@ getMatchesForComparisonInstantiation and literal code is " << literal_code << "attr id is " << key_id << std::endl;
+
   constexpr std::size_t kNumBitsPerWord = sizeof(WordUnit) << 3;
   // We will break down the loop over all bit positions into several
   // fixed-length small loops called groups, making it easy to
@@ -250,51 +247,37 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
   // complement_mask: 0 1^k 0 1^k 0 ... 0 1^k
   // result_mask: 1 0^k 1 0^k 1 ... 1 0^k
   WordUnit base_mask = 0;
-  std::cout << "num_code/word is " << num_codes_per_word_[key_id] << std::endl; 
-  for (std::size_t i = 0; i < num_codes_per_word_[key_id]; ++i) {
-    base_mask = (base_mask << num_bits_per_code_[key_id]) | static_cast<WordUnit>(1);
+/*  for (std::size_t i = 0; i < num_codes_per_word_; ++i) {
+    base_mask = (base_mask << num_bits_per_code_) | static_cast<WordUnit>(1);
   }
-  std::cout << "1" << std::endl;
   WordUnit complement_mask = base_mask * static_cast<WordUnit>((1ULL << CODE_LENGTH) - 1);
   WordUnit result_mask = base_mask << CODE_LENGTH;
-  std::cout << "2" << std::endl;
 
   WordUnit less_than_mask = base_mask * literal_code;
   WordUnit greater_than_mask = (base_mask * literal_code) ^ complement_mask;
   WordUnit equal_mask = base_mask
       * (~literal_code & (static_cast<WordUnit>(-1) >> (kNumBitsPerWord - CODE_LENGTH)));
   WordUnit inequal_mask = base_mask * literal_code;
-  std::cout << "3" << std::endl;
 
   std::size_t num_tuples = getMaxTupleID() + 1;
   //std::size_t num_tuples = tuple_store_.getMaxTupleID() + 1;
   TupleIdSequence *sequence = new TupleIdSequence(num_tuples);
-  std::cout << "4" << std::endl;
 
   WordUnit word_bitvector, output_bitvector = 0;
   std::int64_t output_offset = 0;
   std::size_t output_word_id = 0;
-  // Kan: TODO
-  std::cout << "num codes per segment is " << num_codes_per_segment_[key_id] << std::endl;
-  std::size_t num_words_ = (num_tuples + num_codes_per_segment_[key_id] - 1)/ num_codes_per_segment_[key_id];
-  // ADD:
-  
-  WordUnit *words_ = (WordUnit*)column_stripes_[key_id];
-  std::cout << "for each segment in this columstripe" << std::endl;
   for (std::size_t segment_offset = 0;
-       //segment_offset < num_words_;
        segment_offset < num_words_;
-       segment_offset += num_words_per_segment_[key_id]) {
+       segment_offset += num_words_per_segment_) {
     WordUnit segment_bitvector = 0;
     std::size_t word_id = 0;
-    std::cout << "segment offset is " << segment_offset << std::endl;
+
     // A loop over all words inside a segment.
     // We break down the loop over all bit positions into several
     // fixed-length small loops.
     for (std::size_t bit_group_id = 0; bit_group_id < kNumFilledGroups; ++bit_group_id) {
       // For more details about these bitwise operators, see the BitWeaving paper:
       // http://quickstep.cs.wisc.edu/pubs/bitweaving-sigmod.pdf
-      std::cout << "current bit_group_id is " << bit_group_id << " kNumFilledGroup is " << kNumFilledGroups << std::endl;
       for (std::size_t bit = 0; bit < kNumWordsPerGroup; ++bit) {
         switch (COMP) {
           case ComparisonID::kEqual:
@@ -310,10 +293,8 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
                 & result_mask;
             break;
           case ComparisonID::kLess:
-	    std::cout << "before less "<< std::endl;
             word_bitvector = (less_than_mask + (words_[segment_offset + word_id]
                 ^ complement_mask)) & result_mask;
-	    std::cout << "after less "<< std::endl;
             break;
           case ComparisonID::kGreaterOrEqual:
             word_bitvector = ~(less_than_mask + (words_[segment_offset + word_id]
@@ -365,8 +346,8 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
       segment_bitvector |= word_bitvector >> word_id++;
     }
 
-    output_bitvector |= (segment_bitvector << num_padding_bits_[key_id]) >> output_offset;
-    output_offset += num_codes_per_segment_[key_id];   //TODO???
+    output_bitvector |= (segment_bitvector << num_padding_bits_) >> output_offset;
+    output_offset += num_codes_per_segment_;
 
     if (static_cast<std::uint64_t>(output_offset) >= (sizeof(WordUnit) << 3)) {
       WordUnit filter_mask = filter ? filter->getWord(output_word_id) : static_cast<WordUnit>(-1);
@@ -381,22 +362,19 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
     }
   }
 
-  output_offset -= num_words_ * num_codes_per_word_[key_id] - num_tuples;
-  std::cout << "outputoffset: " << output_offset << std::endl;
-  output_offset = 1111;
+  output_offset -= num_words_ * num_codes_per_word_ - num_tuples;
   if (output_offset > 0) {
-    std::cout << "output_offset>0 !!!!!!!1" <<std::endl;
     WordUnit filter_mask = filter ? filter->getWord(output_word_id) : static_cast<WordUnit>(-1);
     sequence->setWord(output_word_id, output_bitvector & filter_mask);
   }
 
-
   return sequence;
+*/
 }
 
 
 // =============================================
-BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
+BWVColumnStoreTupleStorageSubBlock::BWVColumnStoreTupleStorageSubBlock(
     const CatalogRelationSchema &relation,
     const TupleStorageSubBlockDescription &description,
     const bool new_block,
@@ -409,21 +387,21 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
                            sub_block_memory,
                            sub_block_memory_size),
       sort_specified_(description_.HasExtension(
-          BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id)),
+          BWVColumnStoreTupleStorageSubBlockDescription::sort_attribute_id)),
       sorted_(true),
-      header_(static_cast<BWColumnStoreHeader*>(sub_block_memory)) {
+      header_(static_cast<BWVColumnStoreHeader*>(sub_block_memory)) {
   if (!DescriptionIsValid(relation_, description_)) {
-    FATAL_ERROR("Attempted to construct a BWColumnStoreTupleStorageSubBlock from an invalid description.");
+    FATAL_ERROR("Attempted to construct a BWVColumnStoreTupleStorageSubBlock from an invalid description.");
   }
 
   if (sort_specified_) {
     sort_column_id_ = description_.GetExtension(
-        BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id);
+        BWVColumnStoreTupleStorageSubBlockDescription::sort_attribute_id);
     sort_column_type_ = &(relation_.getAttributeById(sort_column_id_)->getType());
   }
 
-  if (sub_block_memory_size < sizeof(BWColumnStoreHeader)) {
-    throw BlockMemoryTooSmall("BWColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
+  if (sub_block_memory_size < sizeof(BWVColumnStoreHeader)) {
+    throw BlockMemoryTooSmall("BWVColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
   }
   //col and row for column_stripes
   num_codes_per_word_.resize(relation_.getMaxAttributeId() + 1);
@@ -431,15 +409,13 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   num_codes_per_segment_.resize(relation_.getMaxAttributeId() + 1);
   num_words_per_segment_.resize(relation_.getMaxAttributeId() + 1);
   num_words_per_code_.resize(relation_.getMaxAttributeId() + 1);
-  num_bits_per_code_.resize(relation_.getMaxAttributeId() + 1);
   int size = 0;
   std::cout << "wordunit is " << (sizeof(WordUnit)<<3) << std::endl; 
   for (const CatalogAttribute &attr : relation_) { 
         num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
      	std::cout << "current attr is " << attr.getID() << std::endl;
-        std::cout << "attr length is " << attr.getType().maximumByteLength()*8 + 1 << std::endl; 
-	num_bits_per_code_[attr.getID()] = attr.getType().maximumByteLength()*8 + 1;
-        if(num_codes_per_word_[attr.getID()] == 0)
+        std::cout << "attr length is " << attr.getType().maximumByteLength()<<3 + 1 << std::endl; 
+	if(num_codes_per_word_[attr.getID()] == 0)
 	{
 		num_words_per_code_[attr.getID()] = ((attr.getType().maximumByteLength()<<3)+1)/(sizeof(WordUnit)<<3) + 1;
      		num_codes_per_segment_[attr.getID()] =  (attr.getType().maximumByteLength()<<3); //some sort of hard coding for now
@@ -467,21 +443,21 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 
   // Determine the amount of tuples this sub-block can hold. Compute on the
   // order of bits to account for null bitmap storage.
-  max_tuples_ = ((sub_block_memory_size_ - sizeof(BWColumnStoreHeader)) << 3)
+  max_tuples_ = ((sub_block_memory_size_ - sizeof(BWVColumnStoreHeader)) << 3)
                 / ((size << 3) + relation_.numNullableAttributes());
   if (max_tuples_ == 0) {
-    throw BlockMemoryTooSmall("BWColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
+    throw BlockMemoryTooSmall("BWVColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
   }
 
   // BitVector's storage requirements "round up" to sizeof(size_t), so now redo
   // the calculation accurately.
   std::size_t bitmap_required_bytes = BitVector<false>::BytesNeeded(max_tuples_);
   max_tuples_ = (sub_block_memory_size_
-                     - sizeof(BWColumnStoreHeader)
+                     - sizeof(BWVColumnStoreHeader)
                      - (relation_.numNullableAttributes() * bitmap_required_bytes))
                 / relation_.getFixedByteLength();
   if (max_tuples_ == 0) {
-    throw BlockMemoryTooSmall("BWColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
+    throw BlockMemoryTooSmall("BWVColumnStoreTupleStorageSubBlock", sub_block_memory_size_);
   }
   bitmap_required_bytes = BitVector<false>::BytesNeeded(max_tuples_);
 
@@ -491,11 +467,11 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
     //initialize(new_block,
     //           static_cast<char*>(sub_block_memory) + header_size,
     //           sub_block_memory_size - header_size);
-    // BWColumnStoreHeader?????? TODO
+    // BWVColumnStoreHeader?????? TODO
   }
 
   // Allocate memory for this sub-block's structures, starting with the header.
-  char *memory_location = static_cast<char*>(sub_block_memory_) + sizeof(BWColumnStoreHeader);
+  char *memory_location = static_cast<char*>(sub_block_memory_) + sizeof(BWVColumnStoreHeader);
 
   // Per-column NULL bitmaps.
   for (attribute_id attr_id = 0;
@@ -574,15 +550,15 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 	  std::cout << "here 4" <<std::endl;
 	}
 
-	bool BWColumnStoreTupleStorageSubBlock::DescriptionIsValid(
+	bool BWVColumnStoreTupleStorageSubBlock::DescriptionIsValid(
 	    const CatalogRelationSchema &relation,
 	    const TupleStorageSubBlockDescription &description) {
-	  // Make sure description is initialized and specifies BWColumnStore.
+	  // Make sure description is initialized and specifies BWVColumnStore.
 	  std::cout << "Get in checking Description!!!!!!" <<std::endl;
 	  if (!description.IsInitialized()) {
 	    return false;
 	  }
-	  if (description.sub_block_type() != TupleStorageSubBlockDescription::BW_COLUMN_STORE) {
+	  if (description.sub_block_type() != TupleStorageSubBlockDescription::BWV_COLUMN_STORE) {
 	    return false;
 	  }
 
@@ -594,9 +570,9 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 	  // If a sort attribute is specified, check that it exists and can be ordered
 	  // by LessComparison.
 	  if (description.HasExtension(
-		  BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id)) {
+		  BWVColumnStoreTupleStorageSubBlockDescription::sort_attribute_id)) {
 	    const attribute_id sort_attribute_id = description.GetExtension(
-		BWColumnStoreTupleStorageSubBlockDescription::sort_attribute_id);
+		BWVColumnStoreTupleStorageSubBlockDescription::sort_attribute_id);
 	    if (!relation.hasAttributeWithId(sort_attribute_id)) {
 	      return false;
 	    }
@@ -611,7 +587,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 	  return true;
 	}
 
-	std::size_t BWColumnStoreTupleStorageSubBlock::EstimateBytesPerTuple(
+	std::size_t BWVColumnStoreTupleStorageSubBlock::EstimateBytesPerTuple(
 	    const CatalogRelationSchema &relation,
 	    const TupleStorageSubBlockDescription &description) {
 	  DEBUG_ASSERT(DescriptionIsValid(relation, description));
@@ -623,7 +599,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 		 + ((relation.numNullableAttributes() + 7) >> 3);
 	}
 
-	TupleStorageSubBlock::InsertResult BWColumnStoreTupleStorageSubBlock::insertTuple(
+	TupleStorageSubBlock::InsertResult BWVColumnStoreTupleStorageSubBlock::insertTuple(
 	    const Tuple &tuple) {
 	#ifdef QUICKSTEP_DEBUG
 	  paranoidInsertTypeCheck(tuple);
@@ -656,7 +632,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   return retval;
 }
 
-bool BWColumnStoreTupleStorageSubBlock::insertTupleInBatch(const Tuple &tuple) {
+bool BWVColumnStoreTupleStorageSubBlock::insertTupleInBatch(const Tuple &tuple) {
 #ifdef QUICKSTEP_DEBUG
   paranoidInsertTypeCheck(tuple);
 #endif
@@ -669,7 +645,7 @@ bool BWColumnStoreTupleStorageSubBlock::insertTupleInBatch(const Tuple &tuple) {
   return true;
 }
 
-tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *accessor) {
+tuple_id BWVColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *accessor) {
   const tuple_id original_num_tuples = header_->num_tuples;
   std::cout << "Get in bulkInsertTuples!" << "Get Here11!" << std::endl;
   InvokeOnAnyValueAccessor(
@@ -794,7 +770,7 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
   return num_inserted;
 }
 
-tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuplesWithRemappedAttributes(
+tuple_id BWVColumnStoreTupleStorageSubBlock::bulkInsertTuplesWithRemappedAttributes(
     const std::vector<attribute_id> &attribute_map,
     ValueAccessor *accessor) {
   DEBUG_ASSERT(attribute_map.size() == relation_.size());
@@ -857,7 +833,7 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuplesWithRemappedAttribut
   return num_inserted;
 }
 
-const void* BWColumnStoreTupleStorageSubBlock::getAttributeValue(
+const void* BWVColumnStoreTupleStorageSubBlock::getAttributeValue(
     const tuple_id tuple,
     const attribute_id attr) const {
   DEBUG_ASSERT(hasTupleWithID(tuple));
@@ -872,11 +848,11 @@ const void* BWColumnStoreTupleStorageSubBlock::getAttributeValue(
          + (tuple * relation_.getAttributeById(attr)->getType().maximumByteLength());
 }
 
-TypedValue BWColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
+TypedValue BWVColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
     const tuple_id tuple,
     const attribute_id attr) const {   //override?
 
-  std::cout << "get attribute value typed from BWColumnStore" << std::endl;
+  std::cout << "get attribute value typed from BWVColumnStore" << std::endl;
   const Type &attr_type = relation_.getAttributeById(attr)->getType();
   const void *untyped_value = getAttributeValue(tuple, attr);
   return (untyped_value == nullptr)
@@ -884,11 +860,11 @@ TypedValue BWColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
       : attr_type.makeValue(untyped_value, attr_type.maximumByteLength());
 }
 
-ValueAccessor* BWColumnStoreTupleStorageSubBlock::createValueAccessor(
+ValueAccessor* BWVColumnStoreTupleStorageSubBlock::createValueAccessor(
     const TupleIdSequence *sequence) const {
   std::cout << "---- create a value accessor for BWsubblock" << std::endl;
-  BWColumnStoreValueAccessor *base_accessor
-      = new BWColumnStoreValueAccessor(relation_,
+  BWVColumnStoreValueAccessor *base_accessor
+      = new BWVColumnStoreValueAccessor(relation_,
                                           relation_,
                                           header_->num_tuples,
                                           column_stripes_,
@@ -896,13 +872,13 @@ ValueAccessor* BWColumnStoreTupleStorageSubBlock::createValueAccessor(
   if (sequence == nullptr) {
     return base_accessor;
   } else {
-    return new TupleIdSequenceAdapterValueAccessor<BWColumnStoreValueAccessor>(
+    return new TupleIdSequenceAdapterValueAccessor<BWVColumnStoreValueAccessor>(
         base_accessor,
         *sequence);
   }
 }
 
-bool BWColumnStoreTupleStorageSubBlock::canSetAttributeValuesInPlaceTyped(
+bool BWVColumnStoreTupleStorageSubBlock::canSetAttributeValuesInPlaceTyped(
     const tuple_id tuple,
     const std::unordered_map<attribute_id, TypedValue> &new_values) const {
   DEBUG_ASSERT(hasTupleWithID(tuple));
@@ -923,7 +899,7 @@ bool BWColumnStoreTupleStorageSubBlock::canSetAttributeValuesInPlaceTyped(
   return true;
 }
 
-void BWColumnStoreTupleStorageSubBlock::setAttributeValueInPlaceTyped(
+void BWVColumnStoreTupleStorageSubBlock::setAttributeValueInPlaceTyped(
     const tuple_id tuple,
     const attribute_id attr,
     const TypedValue &value) {
@@ -944,7 +920,7 @@ void BWColumnStoreTupleStorageSubBlock::setAttributeValueInPlaceTyped(
   value.copyInto(value_position);
 }
 
-bool BWColumnStoreTupleStorageSubBlock::deleteTuple(const tuple_id tuple) {
+bool BWVColumnStoreTupleStorageSubBlock::deleteTuple(const tuple_id tuple) {
   DEBUG_ASSERT(hasTupleWithID(tuple));
 
   if (sort_specified_
@@ -976,7 +952,7 @@ bool BWColumnStoreTupleStorageSubBlock::deleteTuple(const tuple_id tuple) {
   }
 }
 
-bool BWColumnStoreTupleStorageSubBlock::bulkDeleteTuples(TupleIdSequence *tuples) {
+bool BWVColumnStoreTupleStorageSubBlock::bulkDeleteTuples(TupleIdSequence *tuples) {
   if (tuples->empty()) {
     // Nothing to do.
     return false;
@@ -1035,7 +1011,7 @@ bool BWColumnStoreTupleStorageSubBlock::bulkDeleteTuples(TupleIdSequence *tuples
   return true;
 }
 
-predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationCost(
+predicate_cost_t BWVColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationCost(
     const ComparisonPredicate &predicate) const {
   std::cout << "Get in estimateEvaluationCost" << std::endl;
   if (sort_specified_ && predicate.isAttributeLiteralComparisonPredicate()) {
@@ -1047,13 +1023,13 @@ predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationC
   return predicate_cost::kBitWeavingHScan;
 }
 
-/*TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForPredicate(
+TupleIdSequence* BWVColumnStoreTupleStorageSubBlock::getMatchesForPredicate(
     const ComparisonPredicate &predicate,
     const TupleIdSequence *filter) const {
   std::cout << "------ Get in getMatchesForPredicate of BW" << std::endl;
 
   DCHECK(sort_specified_) <<
-      "Called BWColumnStoreTupleStorageSubBlock::getMatchesForPredicate() "
+      "Called BWVColumnStoreTupleStorageSubBlock::getMatchesForPredicate() "
       "for an unsorted column store (predicate should have been evaluated "
       "with a scan instead).";
 
@@ -1065,7 +1041,7 @@ predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationC
       header_->num_tuples - header_->nulls_in_sort_column);
 
   if (matches == nullptr) {
-    FATAL_ERROR("Called BWColumnStoreTupleStorageSubBlock::getMatchesForPredicate() "
+    FATAL_ERROR("Called BWVColumnStoreTupleStorageSubBlock::getMatchesForPredicate() "
                 "with a predicate that can only be evaluated with a scan.");
   } else {
     if (filter != nullptr) {
@@ -1074,8 +1050,8 @@ predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationC
     return matches;
   }
 }
-*/
-void BWColumnStoreTupleStorageSubBlock::insertTupleAtPosition(
+
+void BWVColumnStoreTupleStorageSubBlock::insertTupleAtPosition(
     const Tuple &tuple,
     const tuple_id position) {
   DEBUG_ASSERT(hasSpaceToInsert(1));
@@ -1117,7 +1093,7 @@ void BWColumnStoreTupleStorageSubBlock::insertTupleAtPosition(
   ++(header_->num_tuples);
 }
 
-void BWColumnStoreTupleStorageSubBlock::shiftTuples(
+void BWVColumnStoreTupleStorageSubBlock::shiftTuples(
     const tuple_id dest_position,
     const tuple_id src_tuple,
     const tuple_id num_tuples) {
@@ -1131,7 +1107,7 @@ void BWColumnStoreTupleStorageSubBlock::shiftTuples(
   }
 }
 
-void BWColumnStoreTupleStorageSubBlock::shiftNullBitmaps(
+void BWVColumnStoreTupleStorageSubBlock::shiftNullBitmaps(
     const tuple_id from_position,
     const tuple_id distance) {
   if (relation_.hasNullableAttributes()) {
@@ -1152,7 +1128,7 @@ void BWColumnStoreTupleStorageSubBlock::shiftNullBitmaps(
 // TODO(chasseur): This implementation uses out-of-band memory up to the
 // total size of tuples contained in this sub-block. It could be done with
 // less memory, although the implementation would be more complex.
-bool BWColumnStoreTupleStorageSubBlock::rebuildInternal() {
+bool BWVColumnStoreTupleStorageSubBlock::rebuildInternal() {
   DCHECK(sort_specified_);
 
   const tuple_id num_tuples = header_->num_tuples;
@@ -1239,7 +1215,7 @@ bool BWColumnStoreTupleStorageSubBlock::rebuildInternal() {
 
   const std::size_t bitmap_required_bytes = BitVector<false>::BytesNeeded(max_tuples_);
   char *bitmap_location = static_cast<char*>(sub_block_memory_)
-                          + sizeof(BWColumnStoreHeader);
+                          + sizeof(BWVColumnStoreHeader);
 
   for (attribute_id stripe_id = 0; stripe_id <= relation_.getMaxAttributeId(); ++stripe_id) {
     if (relation_.hasAttributeWithId(stripe_id)) {
@@ -1303,7 +1279,7 @@ bool BWColumnStoreTupleStorageSubBlock::rebuildInternal() {
   // Overwrite the unsorted tails of the column stripes in this block with the
   // sorted values from the buffers. Also copy back any null bitmaps.
   bitmap_location = static_cast<char*>(sub_block_memory_)
-                    + sizeof(BWColumnStoreHeader);
+                    + sizeof(BWVColumnStoreHeader);
   for (CatalogRelationSchema::const_iterator attr_it = relation_.begin();
        attr_it != relation_.end();
        ++attr_it) {

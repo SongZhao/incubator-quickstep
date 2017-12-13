@@ -123,6 +123,7 @@ const tuple_id kMaxTupleID = INT_MAX;
 enum TupleStorageSubBlockType {
   kBasicColumnStore,
   kBWColumnStore,
+  kBWVColumnStore,
   kCompressedPackedRowStore,
   kCompressedColumnStore,
   kSplitRowStore,

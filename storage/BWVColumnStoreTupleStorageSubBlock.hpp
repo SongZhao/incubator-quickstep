@@ -17,8 +17,8 @@
  * under the License.
  **/
 
-#ifndef QUICKSTEP_STORAGE_BW_COLUMN_STORE_TUPLE_STORAGE_SUB_BLOCK_HPP_
-#define QUICKSTEP_STORAGE_BW_COLUMN_STORE_TUPLE_STORAGE_SUB_BLOCK_HPP_
+#ifndef QUICKSTEP_STORAGE_BWV_COLUMN_STORE_TUPLE_STORAGE_SUB_BLOCK_HPP_
+#define QUICKSTEP_STORAGE_BWV_COLUMN_STORE_TUPLE_STORAGE_SUB_BLOCK_HPP_
 
 #include <unordered_map>
 #include <vector>
@@ -58,7 +58,7 @@ class TupleStorageSubBlockDescription;
 class Type;
 class ValueAccessor;
 
-QUICKSTEP_DECLARE_SUB_BLOCK_TYPE_REGISTERED(BWColumnStoreTupleStorageSubBlock);
+QUICKSTEP_DECLARE_SUB_BLOCK_TYPE_REGISTERED(BWVColumnStoreTupleStorageSubBlock);
 
 /** \addtogroup Storage
  *  @{
@@ -69,19 +69,19 @@ QUICKSTEP_DECLARE_SUB_BLOCK_TYPE_REGISTERED(BWColumnStoreTupleStorageSubBlock);
  *        with a single sort column and no compression or holes.
  * @warning This implementation does NOT support variable-length attributes.
  *          It is an error to attempt to construct a
- *          BWColumnStoreTupleStorageSubBlock for a relation with any
+ *          BWVColumnStoreTupleStorageSubBlock for a relation with any
  *          variable-length attributes.
  **/
-class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
-//class BWColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
+class BWVColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
+//class BWVColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
  public:
-  BWColumnStoreTupleStorageSubBlock(const CatalogRelationSchema &relation,
+  BWVColumnStoreTupleStorageSubBlock(const CatalogRelationSchema &relation,
                                        const TupleStorageSubBlockDescription &description,
                                        const bool new_block,
                                        void *sub_block_memory,
                                        const std::size_t sub_block_memory_size);
 
-  ~BWColumnStoreTupleStorageSubBlock() override {
+  ~BWVColumnStoreTupleStorageSubBlock() override {
   }
 
   /**
@@ -138,7 +138,7 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
   }
 
   TupleStorageSubBlockType getTupleStorageSubBlockType() const override {
-    return kBWColumnStore;
+    return kBWVColumnStore;
   }
 
   bool isEmpty() const override {
@@ -199,9 +199,9 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
 
   // This override can quickly evaluate comparisons between the sort column
   // and a literal value.
-  /*TupleIdSequence* getMatchesForPredicate(const ComparisonPredicate &predicate,
+  TupleIdSequence* getMatchesForPredicate(const ComparisonPredicate &predicate,
                                           const TupleIdSequence *filter) const override;
-*/
+
   void rebuild() override {
     if (sort_specified_ && !sorted_) {
       rebuildInternal();
@@ -214,7 +214,7 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
   }
 
  private:
-  struct BWColumnStoreHeader {
+  struct BWVColumnStoreHeader {
     tuple_id num_tuples;
     tuple_id nulls_in_sort_column;
   };
@@ -283,23 +283,22 @@ class BWColumnStoreTupleStorageSubBlock : public BWTupleStorageSubBlock {
   int row;
   int num_tuple_in_current_segment;
   int nth_segment;
-  BWColumnStoreHeader *header_;
+  BWVColumnStoreHeader *header_;
   std::vector<void*> column_stripes_;
-  std::vector<std::size_t> num_codes_per_word_;
-  std::vector<std::size_t> rol_array_;
-  std::vector<std::size_t> num_padding_bits_;
-  std::vector<std::size_t> num_codes_per_segment_;
-  std::vector<std::size_t> num_words_per_segment_;
-  std::vector<std::size_t> num_words_per_code_;
-  std::vector<std::size_t> num_bits_per_code_;
+  std::vector<int> num_codes_per_word_;
+  std::vector<int> rol_array_;
+  std::vector<int> num_padding_bits_;
+  std::vector<int> num_codes_per_segment_;
+  std::vector<int> num_words_per_segment_;
+  std::vector<int> num_words_per_code_;
   
   PtrVector<BitVector<false>, true> column_null_bitmaps_;
 
-  DISALLOW_COPY_AND_ASSIGN(BWColumnStoreTupleStorageSubBlock);
+  DISALLOW_COPY_AND_ASSIGN(BWVColumnStoreTupleStorageSubBlock);
 };
 
 /** @} */
 
 }  // namespace quickstep
 
-#endif  // QUICKSTEP_STORAGE_BW_COLUMN_STORE_TUPLE_STORAGE_SUB_BLOCK_HPP_
+#endif  // QUICKSTEP_STORAGE_BWV_COLUMN_STORE_TUPLE_STORAGE_SUB_BLOCK_HPP_
