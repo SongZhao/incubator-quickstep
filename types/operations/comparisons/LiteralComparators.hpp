@@ -177,7 +177,6 @@ class LiteralUncheckedComparator : public UncheckedComparator {
       const attribute_id left_id,
       const TypedValue &right,
       const TupleIdSequence *filter) const override {
-    std::cout << "------ get in compareValueAccessorandStaticValue of literal comparator" << std::endl;
     return compareValueAccessorAndStaticValueHelper<true>(left_accessor, left_id, right, filter);
   }
 

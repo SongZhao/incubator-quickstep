@@ -123,7 +123,7 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparison(
     const std::uint32_t literal_code,
     const ComparisonID comp,
     const TupleIdSequence *filter, const attribute_id key_id) const {
-  std::cout << "------ get in getMatchesForComparison" << std::endl;
+  //std::cout << "------ get in getMatchesForComparison" << std::endl;
   switch (code_length_) {
     case 0:
       LOG(FATAL) << "BitWeavingHIndexSubBlock does not support 0-bit codes.";
@@ -201,7 +201,7 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonHelpe
     const ComparisonID comp,
     const TupleIdSequence *filter, const attribute_id key_id) const {
   
-  std::cout << "------ get in getMatchesForComparisonHelper" << std::endl;
+  //std::cout << "------ get in getMatchesForComparisonHelper" << std::endl;
   switch (comp) {
     case ComparisonID::kEqual:
       return getMatchesForComparisonInstantiation<CODE_LENGTH, ComparisonID::kEqual>(
@@ -231,7 +231,7 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
     const std::uint32_t literal_code,
     const TupleIdSequence *filter, const attribute_id key_id) const {
   DEBUG_ASSERT(literal_code < (1ULL << CODE_LENGTH));
-  std::cout << "@ getMatchesForComparisonInstantiation and literal code is " << literal_code << "attr id is " << key_id << std::endl;
+  //std::cout << "@ getMatchesForComparisonInstantiation and literal code is " << literal_code << "attr id is " << key_id << std::endl;
   constexpr std::size_t kNumBitsPerWord = sizeof(WordUnit) << 3;
   // We will break down the loop over all bit positions into several
   // fixed-length small loops called groups, making it easy to
@@ -250,51 +250,51 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
   // complement_mask: 0 1^k 0 1^k 0 ... 0 1^k
   // result_mask: 1 0^k 1 0^k 1 ... 1 0^k
   WordUnit base_mask = 0;
-  std::cout << "num_code/word is " << num_codes_per_word_[key_id] << std::endl; 
+  //std::cout << "num_code/word is " << num_codes_per_word_[key_id] << std::endl; 
   for (std::size_t i = 0; i < num_codes_per_word_[key_id]; ++i) {
     base_mask = (base_mask << num_bits_per_code_[key_id]) | static_cast<WordUnit>(1);
   }
-  std::cout << "1" << std::endl;
+  //std::cout << "1" << std::endl;
   WordUnit complement_mask = base_mask * static_cast<WordUnit>((1ULL << CODE_LENGTH) - 1);
   WordUnit result_mask = base_mask << CODE_LENGTH;
-  std::cout << "2" << std::endl;
+  //std::cout << "2" << std::endl;
 
   WordUnit less_than_mask = base_mask * literal_code;
   WordUnit greater_than_mask = (base_mask * literal_code) ^ complement_mask;
   WordUnit equal_mask = base_mask
       * (~literal_code & (static_cast<WordUnit>(-1) >> (kNumBitsPerWord - CODE_LENGTH)));
   WordUnit inequal_mask = base_mask * literal_code;
-  std::cout << "3" << std::endl;
+  //std::cout << "3" << std::endl;
 
   std::size_t num_tuples = getMaxTupleID() + 1;
   //std::size_t num_tuples = tuple_store_.getMaxTupleID() + 1;
   TupleIdSequence *sequence = new TupleIdSequence(num_tuples);
-  std::cout << "4" << std::endl;
+  //std::cout << "4" << std::endl;
 
   WordUnit word_bitvector, output_bitvector = 0;
   std::int64_t output_offset = 0;
   std::size_t output_word_id = 0;
   // Kan: TODO
-  std::cout << "num codes per segment is " << num_codes_per_segment_[key_id] << std::endl;
+  //std::cout << "num codes per segment is " << num_codes_per_segment_[key_id] << std::endl;
   std::size_t num_words_ = (num_tuples + num_codes_per_segment_[key_id] - 1)/ num_codes_per_segment_[key_id];
   // ADD:
   
   WordUnit *words_ = (WordUnit*)column_stripes_[key_id];
-  std::cout << "for each segment in this columstripe" << std::endl;
+  //std::cout << "for each segment in this columstripe" << std::endl;
   for (std::size_t segment_offset = 0;
        //segment_offset < num_words_;
        segment_offset < num_words_;
        segment_offset += num_words_per_segment_[key_id]) {
     WordUnit segment_bitvector = 0;
     std::size_t word_id = 0;
-    std::cout << "segment offset is " << segment_offset << std::endl;
+    //std::cout << "segment offset is " << segment_offset << std::endl;
     // A loop over all words inside a segment.
     // We break down the loop over all bit positions into several
     // fixed-length small loops.
     for (std::size_t bit_group_id = 0; bit_group_id < kNumFilledGroups; ++bit_group_id) {
       // For more details about these bitwise operators, see the BitWeaving paper:
       // http://quickstep.cs.wisc.edu/pubs/bitweaving-sigmod.pdf
-      std::cout << "current bit_group_id is " << bit_group_id << " kNumFilledGroup is " << kNumFilledGroups << std::endl;
+      //std::cout << "current bit_group_id is " << bit_group_id << " kNumFilledGroup is " << kNumFilledGroups << std::endl;
       for (std::size_t bit = 0; bit < kNumWordsPerGroup; ++bit) {
         switch (COMP) {
           case ComparisonID::kEqual:
@@ -310,10 +310,10 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
                 & result_mask;
             break;
           case ComparisonID::kLess:
-	    std::cout << "before less "<< std::endl;
+	    //std::cout << "before less "<< std::endl;
             word_bitvector = (less_than_mask + (words_[segment_offset + word_id]
                 ^ complement_mask)) & result_mask;
-	    std::cout << "after less "<< std::endl;
+	    //std::cout << "after less "<< std::endl;
             break;
           case ComparisonID::kGreaterOrEqual:
             word_bitvector = ~(less_than_mask + (words_[segment_offset + word_id]
@@ -382,10 +382,8 @@ TupleIdSequence* BWColumnStoreTupleStorageSubBlock::getMatchesForComparisonInsta
   }
 
   output_offset -= num_words_ * num_codes_per_word_[key_id] - num_tuples;
-  std::cout << "outputoffset: " << output_offset << std::endl;
-  output_offset = 1111;
+  //output_offset = 1111;
   if (output_offset > 0) {
-    std::cout << "output_offset>0 !!!!!!!1" <<std::endl;
     WordUnit filter_mask = filter ? filter->getWord(output_word_id) : static_cast<WordUnit>(-1);
     sequence->setWord(output_word_id, output_bitvector & filter_mask);
   }
@@ -433,11 +431,11 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   num_words_per_code_.resize(relation_.getMaxAttributeId() + 1);
   num_bits_per_code_.resize(relation_.getMaxAttributeId() + 1);
   int size = 0;
-  std::cout << "wordunit is " << (sizeof(WordUnit)<<3) << std::endl; 
+  //std::cout << "wordunit is " << (sizeof(WordUnit)<<3) << std::endl; 
   for (const CatalogAttribute &attr : relation_) { 
         num_codes_per_word_[attr.getID()] = (sizeof(WordUnit)<<3)/((attr.getType().maximumByteLength()<<3)+1);
-     	std::cout << "current attr is " << attr.getID() << std::endl;
-        std::cout << "attr length is " << attr.getType().maximumByteLength()*8 + 1 << std::endl; 
+     	//std::cout << "current attr is " << attr.getID() << std::endl;
+        //std::cout << "attr length is " << attr.getType().maximumByteLength()*8 + 1 << std::endl; 
 	num_bits_per_code_[attr.getID()] = attr.getType().maximumByteLength()*8 + 1;
         if(num_codes_per_word_[attr.getID()] == 0)
 	{
@@ -453,16 +451,16 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
                 num_padding_bits_[attr.getID()] = (sizeof(WordUnit)<<3) - num_codes_per_word_[attr.getID()] * (attr.getType().maximumByteLength()<<3);   
 		size += 1;
 	}
-  std::cout << "#word/code for attr " << attr.getID() << " is " << num_words_per_code_[attr.getID()] << std::endl;
-  std::cout << "#codes/word for attr " << attr.getID() << " is " << num_codes_per_word_[attr.getID()] << std::endl;
-  std::cout << "#codes/segment for attr " << attr.getID() << " is " << num_codes_per_segment_[attr.getID()] << std::endl;
-  std::cout << "#of padding bits" << num_padding_bits_[attr.getID()] << std::endl;	 
+  //std::cout << "#word/code for attr " << attr.getID() << " is " << num_words_per_code_[attr.getID()] << std::endl;
+  //std::cout << "#codes/word for attr " << attr.getID() << " is " << num_codes_per_word_[attr.getID()] << std::endl;
+  //std::cout << "#codes/segment for attr " << attr.getID() << " is " << num_codes_per_segment_[attr.getID()] << std::endl;
+  //std::cout << "#of padding bits" << num_padding_bits_[attr.getID()] << std::endl;	 
   num_words_per_segment_[attr.getID()] = ((attr.getType().maximumByteLength() << 3) * num_words_per_code_[attr.getID()]); 
-  std::cout << "#word/segment for attr " << attr.getID() << " is " << num_words_per_segment_[attr.getID()] << std::endl;
+  //std::cout << "#word/segment for attr " << attr.getID() << " is " << num_words_per_segment_[attr.getID()] << std::endl;
 	 // row_array_[attr.getID()] = max_tuples_ / col_array_[attr.getID()];
   }
-	  std::cout << "this loop 2" << num_codes_per_word_.size() << std::endl;
-  std::cout << "total size of a single tuple is " << size << std::endl;
+	  //std::cout << "this loop 2" << num_codes_per_word_.size() << std::endl;
+  //std::cout << "total size of a single tuple is " << size << std::endl;
 
 
   // Determine the amount of tuples this sub-block can hold. Compute on the
@@ -486,7 +484,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
   bitmap_required_bytes = BitVector<false>::BytesNeeded(max_tuples_);
 
   {
-    std::cout << "Constructing the bw class" << ", Max tuples: " << max_tuples_ << std::endl;
+    //std::cout << "Constructing the bw class" << ", Max tuples: " << max_tuples_ << std::endl;
     //std::size_t header_size = getHeaderSize();
     //initialize(new_block,
     //           static_cast<char*>(sub_block_memory) + header_size,
@@ -520,7 +518,7 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
     
     column_stripes_[attr.getID()] = memory_location;
     memory_location += max_tuples_ * attr.getType().maximumByteLength();
-	  std::cout << "this loop1" <<std::endl;
+	  //std::cout << "this loop1" <<std::endl;
   }/*
   //col and row for column_stripes
   num_codes_per_word_.resize(relation_.getMaxAttributeId() + 1);
@@ -560,25 +558,23 @@ BWColumnStoreTupleStorageSubBlock::BWColumnStoreTupleStorageSubBlock(
 */
 
 	
-	  std::cout << "here 1" <<std::endl;
+	  //std::cout << "here 1" <<std::endl;
 
 	  DEBUG_ASSERT(memory_location
 		       <= static_cast<const char*>(sub_block_memory_) + sub_block_memory_size_);
-	  std::cout << "here 2" <<std::endl;
+	  //std::cout << "here 2" <<std::endl;
 
 	  if (new_block) {
 	    header_->num_tuples = 0;
 	    header_->nulls_in_sort_column = 0;
-	  std::cout << "here 3" <<std::endl;
 	  }
-	  std::cout << "here 4" <<std::endl;
 	}
 
 	bool BWColumnStoreTupleStorageSubBlock::DescriptionIsValid(
 	    const CatalogRelationSchema &relation,
 	    const TupleStorageSubBlockDescription &description) {
 	  // Make sure description is initialized and specifies BWColumnStore.
-	  std::cout << "Get in checking Description!!!!!!" <<std::endl;
+	  //std::cout << "Get in checking Description!!!!!!" <<std::endl;
 	  if (!description.IsInitialized()) {
 	    return false;
 	  }
@@ -671,7 +667,7 @@ bool BWColumnStoreTupleStorageSubBlock::insertTupleInBatch(const Tuple &tuple) {
 
 tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *accessor) {
   const tuple_id original_num_tuples = header_->num_tuples;
-  std::cout << "Get in bulkInsertTuples!" << "Get Here11!" << std::endl;
+  //std::cout << "Get in bulkInsertTuples!" << "Get Here11!" << std::endl;
   InvokeOnAnyValueAccessor(
       accessor,
       [&](auto *accessor) -> void {  // NOLINT(build/c++11)
@@ -683,13 +679,13 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
         for (CatalogRelationSchema::const_iterator attr_it = relation_.begin();
              attr_it != relation_.end();
              ++attr_it) {
-  std::cout << "attr_it is " << attr_it->getID() <<  std::endl;
+  //std::cout << "attr_it is " << attr_it->getID() <<  std::endl;
           const attribute_id attr_id = attr_it->getID();
           const std::size_t attr_size = attr_it->getType().maximumByteLength();
           if (attr_it->getType().isNullable()) {
             const void *attr_value
                 = accessor->template getUntypedValue<true>(accessor_attr_id);
-  std::cout << "attr_value is " << attr_value << std::endl;
+  //std::cout << "attr_value is " << attr_value << std::endl;
             if (attr_value == nullptr) {
               column_null_bitmaps_[attr_id].setBit(header_->num_tuples, true);
             } else {
@@ -699,7 +695,7 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
                      attr_size);
             }
           } else {
-  std::cout << "else attr value is " << accessor->template getUntypedValue<false>(accessor_attr_id) << std::endl;
+  //std::cout << "else attr value is " << accessor->template getUntypedValue<false>(accessor_attr_id) << std::endl;
             memcpy(static_cast<char*>(column_stripes_[attr_id])
                        + header_->num_tuples * attr_size,
                    accessor->template getUntypedValue<false>(accessor_attr_id),
@@ -716,12 +712,12 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
              attr_it != relation_.end();
              ++attr_it) {
           const std::size_t attr_size = attr_it->getType().maximumByteLength();
-  	  std::cout << "attr_it->getID()" <<attr_it->getID() << std::endl;
+  	  /*std::cout << "attr_it->getID()" <<attr_it->getID() << std::endl;
   	  std::cout << "column stripe " << column_stripes_[attr_it->getID()] << std::endl;
   	  std::cout << "offset" << header_->num_tuples << std::endl;
   	  std::cout << "attr size" << attr_size << std::endl;
   	  std::cout << "accessor id" << accessor_attr_id << std::endl;
-	  num_tuple_in_current_segment = header_->num_tuples % num_codes_per_segment_[attr_it->getID()];
+	  */num_tuple_in_current_segment = header_->num_tuples % num_codes_per_segment_[attr_it->getID()];
           nth_segment = header_->num_tuples / num_codes_per_segment_[attr_it->getID()];
 	  if(num_codes_per_word_[attr_it->getID()] != 0)
 		{
@@ -735,12 +731,13 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
 	        // col = 0;
 		 row = num_tuple_in_current_segment;
 		}		
-  		 std::cout << "offset1 is  " << col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()] << std::endl;
- 		 std::cout << "offset2 is  " << nth_segment * num_words_per_segment_[attr_it->getID()] << std::endl;
+  		 //std::cout << "offset1 is  " << col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()] << std::endl;
+ 		 /*std::cout << "offset2 is  " << nth_segment * num_words_per_segment_[attr_it->getID()] << std::endl;
  	 	 std::cout << "addr is " << (column_stripes_[attr_it->getID()]
-                   + col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
+                  + col * attr_size + row * sizeof(WordUnit) * num_words_per_code_[attr_it->getID()]
 		   + nth_segment * num_words_per_segment_[attr_it->getID()]) << std::endl;
- 	 memcpy(static_cast<char*>(column_stripes_[attr_it->getID()]
+ 	         */
+          memcpy(static_cast<char*>(column_stripes_[attr_it->getID()]
                    +  row * (sizeof(WordUnit)<<3) * num_words_per_code_[attr_it->getID()]
 		   + nth_segment * num_words_per_segment_[attr_it->getID()] * (sizeof(WordUnit)<<3)),
                  accessor->template getUntypedValue<false>(accessor_attr_id),
@@ -748,8 +745,8 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
           ++accessor_attr_id;
         }
 	//print table
-	 
-  	std::cout << "max # tuple " << max_tuples_ << std::endl;
+	 /*
+  	//std::cout << "max # tuple " << max_tuples_ << std::endl;
 	for(int  i=0; i < header_->num_tuples; i++)
 	{
 		for(CatalogRelationSchema::const_iterator attr_it = relation_.begin(); attr_it != relation_.end(); ++attr_it)
@@ -757,8 +754,8 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
 	  	 num_tuple_in_current_segment = i  % num_codes_per_segment_[attr_it->getID()];
           	 nth_segment = i  / num_codes_per_segment_[attr_it->getID()];
 			
-           	 std::cout << "item#     " << i << std::endl;
-  		 std::cout << "attr#     " <<attr_it->getID() << std::endl;
+           	 //std::cout << "item#     " << i << std::endl;
+  		 //std::cout << "attr#     " <<attr_it->getID() << std::endl;
 		 if(num_codes_per_word_[attr_it->getID()] != 0)
 		 {
 		 	int row_size = ((attr_it->getType().maximumByteLength()<<3)*num_words_per_code_[attr_it->getID()]);
@@ -784,6 +781,7 @@ tuple_id BWColumnStoreTupleStorageSubBlock::bulkInsertTuples(ValueAccessor *acce
 		
 		}
 	}
+        */
         ++(header_->num_tuples);
       }
     }
@@ -862,7 +860,7 @@ const void* BWColumnStoreTupleStorageSubBlock::getAttributeValue(
     const attribute_id attr) const {
   DEBUG_ASSERT(hasTupleWithID(tuple));
   DEBUG_ASSERT(relation_.hasAttributeWithId(attr));
-  std::cout << "Try to get attribute " << attr << " of tuple " << tuple << std::endl;
+  //std::cout << "Try to get attribute " << attr << " of tuple " << tuple << std::endl;
   if ((!column_null_bitmaps_.elementIsNull(attr))
       && column_null_bitmaps_[attr].getBit(tuple)) {
     return nullptr;
@@ -876,7 +874,7 @@ TypedValue BWColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
     const tuple_id tuple,
     const attribute_id attr) const {   //override?
 
-  std::cout << "get attribute value typed from BWColumnStore" << std::endl;
+  //std::cout << "get attribute value typed from BWColumnStore" << std::endl;
   const Type &attr_type = relation_.getAttributeById(attr)->getType();
   const void *untyped_value = getAttributeValue(tuple, attr);
   return (untyped_value == nullptr)
@@ -886,7 +884,7 @@ TypedValue BWColumnStoreTupleStorageSubBlock::getAttributeValueTyped(
 
 ValueAccessor* BWColumnStoreTupleStorageSubBlock::createValueAccessor(
     const TupleIdSequence *sequence) const {
-  std::cout << "---- create a value accessor for BWsubblock" << std::endl;
+  //std::cout << "---- create a value accessor for BWsubblock" << std::endl;
   BWColumnStoreValueAccessor *base_accessor
       = new BWColumnStoreValueAccessor(relation_,
                                           relation_,
@@ -1037,7 +1035,7 @@ bool BWColumnStoreTupleStorageSubBlock::bulkDeleteTuples(TupleIdSequence *tuples
 
 predicate_cost_t BWColumnStoreTupleStorageSubBlock::estimatePredicateEvaluationCost(
     const ComparisonPredicate &predicate) const {
-  std::cout << "Get in estimateEvaluationCost" << std::endl;
+  //std::cout << "Get in estimateEvaluationCost" << std::endl;
   if (sort_specified_ && predicate.isAttributeLiteralComparisonPredicate()) {
     std::pair<bool, attribute_id> comparison_attr = predicate.getAttributeFromAttributeLiteralComparison();
     if (comparison_attr.second == sort_column_id_) {

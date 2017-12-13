@@ -81,7 +81,7 @@ class BWColumnStoreValueAccessorHelper {
   template <bool check_null = true>
   inline const ColumnAccessor<check_null>* getColumnAccessor(const tuple_id &current_tuple_position,
                                                              const attribute_id attr_id) const {
-    std::cout << "Try to get a column accessor" << std::endl;
+    //std::cout << "Try to get a column accessor" << std::endl;
     DCHECK(relation_.hasAttributeWithId(attr_id));
     const void* base_location = static_cast<const char*>(column_stripes_[attr_id]);
     const std::size_t stride = relation_.getAttributeById(attr_id)->getType().maximumByteLength();
@@ -111,7 +111,7 @@ class BWColumnStoreValueAccessorHelper {
   template <bool check_null>
   inline const void* getAttributeValue(const tuple_id tuple,
                                        const attribute_id attr) const {
-    std::cout << "----- to get an attribute value with type through BWColumnStoreValueAccessorHelper" << std::endl;
+    //std::cout << "----- to get an attribute value with type through BWColumnStoreValueAccessorHelper" << std::endl;
     DEBUG_ASSERT(tuple < num_tuples_);
     DEBUG_ASSERT(relation_.hasAttributeWithId(attr));
     if (check_null
@@ -139,12 +139,12 @@ class BWColumnStoreValueAccessorHelper {
     n_w_p_s = num_w_p_c * (relation_.getAttributeById(attr)->getType().maximumByteLength()<<3);
     n_t_i_c_s  = tuple % n_c_p_s;
     n_s = tuple / n_c_p_s;
-    std::cout << "tuple # is " << tuple << std::endl;
-    std::cout << "in accessor, n_s is "<< n_s << "item number in CS is " << n_t_i_c_s << "num of word/code is " << n_w_p_s << std::endl;
+    //std::cout << "tuple # is " << tuple << std::endl;
+    //std::cout << "in accessor, n_s is "<< n_s << "item number in CS is " << n_t_i_c_s << "num of word/code is " << n_w_p_s << std::endl;
    if(num != 0)
 		{
 		 int row_size = ((relation_.getAttributeById(attr)->getType().maximumByteLength()<<3)*num_w_p_c);
-	 	 std::cout << "row size for this attr's segment is " << row_size << std::endl;
+	 	 //std::cout << "row size for this attr's segment is " << row_size << std::endl;
            	 col = n_t_i_c_s / row_size;
            	 row = n_t_i_c_s % row_size;
 		}
@@ -161,7 +161,7 @@ class BWColumnStoreValueAccessorHelper {
   inline TypedValue getAttributeValueTyped(const tuple_id tuple,
                                            const attribute_id attr) const {
     //Kan: test
-    std::cout << "----- to get an attributeValueTyped with type through BWColumnStoreValueAccessorHelper" << std::endl;
+    //std::cout << "----- to get an attributeValueTyped with type through BWColumnStoreValueAccessorHelper" << std::endl;
 
     const Type &attr_type = relation_.getAttributeById(attr)->getType();
     const void *untyped_value = getAttributeValue<true>(tuple, attr);

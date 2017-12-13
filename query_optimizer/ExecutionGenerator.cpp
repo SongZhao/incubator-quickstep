@@ -313,7 +313,6 @@ bool CheckAggregatePartitioned(const std::size_t num_aggregate_functions,
 constexpr QueryPlan::DAGNodeIndex ExecutionGenerator::CatalogRelationInfo::kInvalidOperatorIndex;
 
 void ExecutionGenerator::generatePlan(const P::PhysicalPtr &physical_plan) {
-  std::cout << "==== Start to generate a plan" << std::endl;
   CHECK(P::SomeTopLevelPlan::MatchesWithConditionalCast(physical_plan, &top_level_physical_plan_))
       << "The physical plan must be rooted by a TopLevelPlan";
 
@@ -681,7 +680,7 @@ bool ExecutionGenerator::convertSimpleProjection(
 void ExecutionGenerator::convertSelection(
     const P::SelectionPtr &physical_selection) {
 
-  std::cout << "=convertSelection=" <<std::endl;
+  //std::cout << "=convertSelection=" <<std::endl;
   const P::PhysicalPtr input = physical_selection->input();
   const CatalogRelationInfo *input_relation_info =
       findRelationInfoOutputByPhysical(input);

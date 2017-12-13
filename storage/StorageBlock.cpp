@@ -798,7 +798,7 @@ TupleStorageSubBlock* StorageBlock::CreateTupleStorageSubBlock(
     void *sub_block_memory,
     const std::size_t sub_block_memory_size) {
   DEBUG_ASSERT(description.IsInitialized());
-  std::cout << "==== To Create a sub Block" << std::endl;
+  //std::cout << "==== To Create a sub Block" << std::endl;
   switch (description.sub_block_type()) {
     case TupleStorageSubBlockDescription::BASIC_COLUMN_STORE:
       return new BasicColumnStoreTupleStorageSubBlock(relation,
@@ -807,14 +807,14 @@ TupleStorageSubBlock* StorageBlock::CreateTupleStorageSubBlock(
                                                       sub_block_memory,
                                                       sub_block_memory_size);
     case TupleStorageSubBlockDescription::BW_COLUMN_STORE:
-      std::cout << "Will create a BW sub Block" << std::endl;
+      //std::cout << "Will create a BW sub Block" << std::endl;
       return new BWColumnStoreTupleStorageSubBlock(relation,
                                                    description,
                                                    new_block,
                                                    sub_block_memory,
                                                    sub_block_memory_size);
     case TupleStorageSubBlockDescription::BWV_COLUMN_STORE:
-      std::cout << "Will create a BWV sub Block" << std::endl;
+      //std::cout << "Will create a BWV sub Block" << std::endl;
       return new BWVColumnStoreTupleStorageSubBlock(relation,
                                                    description,
                                                    new_block,
@@ -833,7 +833,7 @@ TupleStorageSubBlock* StorageBlock::CreateTupleStorageSubBlock(
                                                            sub_block_memory,
                                                            sub_block_memory_size);
     case TupleStorageSubBlockDescription::SPLIT_ROW_STORE:
-      std::cout << "Will create a SplitRow sub Block" << std::endl;
+      //std::cout << "Will create a SplitRow sub Block" << std::endl;
       return new SplitRowStoreTupleStorageSubBlock(relation,
                                                    description,
                                                    new_block,
@@ -1071,7 +1071,7 @@ bool StorageBlock::rebuildIndexes(bool short_circuit) {
 TupleIdSequence* StorageBlock::getMatchesForPredicate(const Predicate *predicate,
                                                       const TupleIdSequence *filter) const {
   
-  std::cout << "--- storageBlock: getMatchesForPredicate" << std::endl;
+  //std::cout << "--- storageBlock: getMatchesForPredicate" << std::endl;
   if (predicate == nullptr) {
     TupleIdSequence *matches = tuple_store_->getExistenceMap();
     if (filter != nullptr) {

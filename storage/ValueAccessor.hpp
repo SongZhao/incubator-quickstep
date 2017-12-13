@@ -844,8 +844,8 @@ class PackedTupleStorageSubBlockValueAccessor : public ValueAccessor {
   template <bool check_null = true>
   inline const void* getUntypedValueAtAbsolutePosition(const attribute_id attr_id,
                                                        const tuple_id tid) const {
-    std::cout << "---- to get an untyped value at absolute position" << std::endl;
-    std::cout << "----- with helper " << typeid(helper_).name() << std::endl;
+    //std::cout << "---- to get an untyped value at absolute position" << std::endl;
+    //std::cout << "----- with helper " << typeid(helper_).name() << std::endl;
     return helper_.template getAttributeValue<check_null>(tid, attr_id);
   }
 
@@ -1049,7 +1049,7 @@ class ColumnAccessor {
    * @return An untyped pointer to the attribute value for the current tuple.
    **/
   inline const void* getUntypedValue() const {
-    std::cout << "---- Try to get an untyped value from columnaccessor" <<std::endl;
+    //std::cout << "---- Try to get an untyped value from columnaccessor" <<std::endl;
     DCHECK(current_tuple_position_ < num_tuples_);
     if (check_null) {
       DCHECK(null_bitmap_ != nullptr);

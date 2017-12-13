@@ -129,7 +129,6 @@ TupleIdSequence* ComparisonPredicate::getAllMatches(
   static constexpr bool short_circuit = false;
 #endif
 
-  std::cout << "----- getAllMatches from comparsionPredicate" << std::endl;
   if (fast_comparator_.get() == nullptr) {
     return GenerateSequenceForStaticResult(accessor, filter, existence_map, static_result_);
   } else if (sub_blocks_ref != nullptr && comparison_.isBasicComparison()) {
@@ -214,12 +213,10 @@ TupleIdSequence* ComparisonPredicate::getAllMatches(
           existence_map);
     }
   } else if (right_operand_->hasStaticValue()) {
-    std::cout << "------ this comparision right operand is static " << std::endl;
 #ifdef QUICKSTEP_ENABLE_VECTOR_COPY_ELISION_SELECTION
     const attribute_id left_operand_attr_id
         = left_operand_->getAttributeIdForValueAccessor();
     if (left_operand_attr_id != -1) {
-      std::cout << "get in ifdef!!!!!"  << typeid(*fast_comparator_).name() << std::endl;
       
       return fast_comparator_->compareValueAccessorAndStaticValue(
           accessor,

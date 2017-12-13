@@ -134,7 +134,6 @@ void Worker::executeWorkOrderHelper(const TaggedMessage &tagged_message,
 
   // Start measuring the execution time.
   start = std::chrono::steady_clock::now();
-  std::cout << "=To execute a work_order=" << std::endl;
   work_order->execute();
   end = std::chrono::steady_clock::now();
   work_order.reset();
