@@ -117,6 +117,7 @@ BasicColumnStoreTupleStorageSubBlock::BasicColumnStoreTupleStorageSubBlock(
   }
 
   if (sort_specified_) {
+    //sort_attribute_id is an int that indicates the attribute to be sorted on.
     sort_column_id_ = description_.GetExtension(
         BasicColumnStoreTupleStorageSubBlockDescription::sort_attribute_id);
     sort_column_type_ = &(relation_.getAttributeById(sort_column_id_)->getType());
@@ -128,6 +129,9 @@ BasicColumnStoreTupleStorageSubBlock::BasicColumnStoreTupleStorageSubBlock(
 
   // Determine the amount of tuples this sub-block can hold. Compute on the
   // order of bits to account for null bitmap storage.
+  //  getFixedByteLength returns the total length of fixed lengh attributes in bytes
+  //  numNullableAttribultes returns the number of nullable attributes in the relation.
+  //  <<3 probably because the word size is 64 bits
   max_tuples_ = ((sub_block_memory_size_ - sizeof(BasicColumnStoreHeader)) << 3)
                 / ((relation_.getFixedByteLength() << 3) + relation_.numNullableAttributes());
   if (max_tuples_ == 0) {
@@ -136,6 +140,7 @@ BasicColumnStoreTupleStorageSubBlock::BasicColumnStoreTupleStorageSubBlock(
 
   // BitVector's storage requirements "round up" to sizeof(size_t), so now redo
   // the calculation accurately.
+  // repeate previous work but count in the size of bitmap needed.
   std::size_t bitmap_required_bytes = BitVector<false>::BytesNeeded(max_tuples_);
   max_tuples_ = (sub_block_memory_size_
                      - sizeof(BasicColumnStoreHeader)
@@ -167,6 +172,7 @@ BasicColumnStoreTupleStorageSubBlock::BasicColumnStoreTupleStorageSubBlock(
   }
 
   // Column stripes.
+  // menmory_location for 
   column_stripes_.resize(relation_.getMaxAttributeId() +  1, nullptr);
   for (const CatalogAttribute &attr : relation_) {
     column_stripes_[attr.getID()] = memory_location;
