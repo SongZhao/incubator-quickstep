@@ -26,6 +26,8 @@ message TupleStorageSubBlockDescription {
     COMPRESSED_PACKED_ROW_STORE = 1;
     COMPRESSED_COLUMN_STORE = 2;
     SPLIT_ROW_STORE = 3;
+    BW_COLUMN_STORE = 4;
+    BWV_COLUMN_STORE = 5;
   }
 
   required TupleStorageSubBlockType sub_block_type = 1;
@@ -40,6 +42,22 @@ message BasicColumnStoreTupleStorageSubBlockDescription {
     // Indicates the attribute to sort the column store by. If unset, the
     // column store will be unsorted.
     optional int32 sort_attribute_id = 64;
+  }
+}
+
+message BWColumnStoreTupleStorageSubBlockDescription {
+  extend TupleStorageSubBlockDescription {
+    // Indicates the attribute to sort the column store by. If unset, the
+    // column store will be unsorted.
+    optional int32 sort_attribute_id = 160;
+  }
+}
+
+message BWVColumnStoreTupleStorageSubBlockDescription {
+  extend TupleStorageSubBlockDescription {
+    // Indicates the attribute to sort the column store by. If unset, the
+    // column store will be unsorted.
+    optional int32 sort_attribute_id = 192;
   }
 }
 

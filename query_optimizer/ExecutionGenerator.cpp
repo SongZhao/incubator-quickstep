@@ -679,6 +679,8 @@ bool ExecutionGenerator::convertSimpleProjection(
 
 void ExecutionGenerator::convertSelection(
     const P::SelectionPtr &physical_selection) {
+
+  //std::cout << "=convertSelection=" <<std::endl;
   const P::PhysicalPtr input = physical_selection->input();
   const CatalogRelationInfo *input_relation_info =
       findRelationInfoOutputByPhysical(input);

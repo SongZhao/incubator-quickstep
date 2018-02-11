@@ -217,6 +217,7 @@ TupleIdSequence* ComparisonPredicate::getAllMatches(
     const attribute_id left_operand_attr_id
         = left_operand_->getAttributeIdForValueAccessor();
     if (left_operand_attr_id != -1) {
+      
       return fast_comparator_->compareValueAccessorAndStaticValue(
           accessor,
           left_operand_attr_id,

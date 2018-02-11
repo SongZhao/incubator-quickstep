@@ -38,6 +38,8 @@ string BlockIdUtil::ToString(const block_id block) {
 
 const char *kTupleStorageSubBlockTypeNames[] = {
   "BasicColumnStore",
+  "BWColumnStore",
+  "BWVColumnStore",
   "CompressedPackedRowStore",
   "CompressedColumnStore",
   "SplitRowStore"

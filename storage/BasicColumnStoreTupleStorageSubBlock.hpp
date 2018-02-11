@@ -132,6 +132,8 @@ class BasicColumnStoreTupleStorageSubBlock : public TupleStorageSubBlock {
   }
 
   bool hasTupleWithID(const tuple_id tuple) const override {
+    std::cout << "Checking this tuple whether in block, basic" << std::endl;
+    //return false;
     return ((tuple >=0) && (tuple < header_->num_tuples));
   }
 

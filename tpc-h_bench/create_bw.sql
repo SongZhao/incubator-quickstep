@@ -1,20 +1,6 @@
-CREATE TABLE region (
-  r_regionkey INT NOT NULL,
-  r_name CHAR(25) NOT NULL,
-  r_comment VARCHAR(152) NOT NULL
-) WITH BLOCKPROPERTIES (
-  TYPE split_rowstore,
-  BLOCKSIZEMB 4);
-create index bwregion on region(r_name) using bitweaving;
+CREATE TABLE region (r_regionkey INT NOT NULL, r_name CHAR(25) NOT NULL, r_comment VARCHAR(152) NOT NULL) WITH BLOCKPROPERTIES (TYPE split_rowstore, BLOCKSIZEMB 4);
 
-CREATE TABLE nation (
-  n_nationkey INT NOT NULL,
-  n_name CHAR(25) NOT NULL,
-  n_regionkey INT NOT NULL,
-  n_comment VARCHAR(152) NOT NULL
-) WITH BLOCKPROPERTIES (
-  TYPE split_rowstore,
-  BLOCKSIZEMB 4);
+CREATE TABLE nation (n_nationkey INT NOT NULL, n_name CHAR(25) NOT NULL, n_regionkey INT NOT NULL, n_comment VARCHAR(152) NOT NULL) WITH BLOCKPROPERTIES (TYPE split_rowstore,BLOCKSIZEMB 4);
 
 CREATE TABLE supplier (
   s_suppkey INT NOT NULL,

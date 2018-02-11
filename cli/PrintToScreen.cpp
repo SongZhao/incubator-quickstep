@@ -71,6 +71,7 @@ void PrintToScreen::PrintRelation(const CatalogRelation &relation,
     return;
   }
 
+  //std::cout << "===== Prepare to print a relation" << std::endl;
   vector<int> column_widths;
   column_widths.reserve(relation.size());
 
@@ -144,6 +145,7 @@ void PrintToScreen::printTuple(const TupleStorageSubBlock &tuple_store,
                                const tuple_id tid,
                                const vector<int> &column_widths,
                                FILE *out) {
+  //std::cout << "printing a tuple from "<< typeid(tuple_store).name() << std::endl;
   DEBUG_ASSERT(tuple_store.hasTupleWithID(tid));
   fputc('|', out);
 
